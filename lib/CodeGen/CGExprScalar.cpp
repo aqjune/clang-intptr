@@ -1723,10 +1723,14 @@ Value *ScalarExprEmitter::VisitCastExpr(CastExpr *CE) {
 
     return Builder.CreateIntToPtr(IntResult, DestLLVMTy);
   }
-  case CK_PointerToIntegral:
+  case CK_PointerToIntegral: {
     assert(!DestTy->isBooleanType() && "bool should use PointerToBool");
-    return Builder.CreatePtrToInt(Visit(E), ConvertType(DestTy));
-
+    Value *Src = Visit(E);
+    Builder.CreateCall(
+            CGF.CGM.getIntrinsic(llvm::Intrinsic::capture, Src->getType()),
+            Src);
+   return Builder.CreatePtrToInt(Src, ConvertType(DestTy));
+  }
   case CK_ToVoid: {
     CGF.EmitIgnoredExpr(E);
     return nullptr;
