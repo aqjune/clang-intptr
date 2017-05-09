@@ -2769,17 +2769,11 @@ Value *ScalarExprEmitter::EmitSub(const BinOpInfo &op) {
               ArrayRef<llvm::Type *>(restrictRhsTys, 3)),
             restrictRhsArgs, "sub.ptr.rhs.restrict");
 
-  // llvm::Type *psubTys[] = { CGF.PtrDiffTy, restrictLhs->getType(), restrictRhs->getType() };
-  // Value *psubArgs[] = { restrictLhs, restrictRhs };
-  // Value *diffInChars = Builder.CreateCall(
-  //            CGF.CGM.getIntrinsic(llvm::Intrinsic::psub, ArrayRef<llvm::Type *>(psubTys, 3)),
-  //            psubArgs, "sub.ptr.sub");
-
-  llvm::Value *LHS
-    = Builder.CreatePtrToInt(restrictLhs, CGF.PtrDiffTy, "sub.ptr.lhs.cast");
-  llvm::Value *RHS
-    = Builder.CreatePtrToInt(restrictRhs, CGF.PtrDiffTy, "sub.ptr.rhs.cast");
-  Value *diffInChars = Builder.CreateSub(LHS, RHS, "sub.ptr.sub");
+  llvm::Type *psubTys[] = { CGF.PtrDiffTy, restrictLhs->getType(), restrictRhs->getType() };
+  Value *psubArgs[] = { restrictLhs, restrictRhs };
+  Value *diffInChars = Builder.CreateCall(
+             CGF.CGM.getIntrinsic(llvm::Intrinsic::psub, ArrayRef<llvm::Type *>(psubTys, 3)),
+             psubArgs, "sub.ptr.sub");
 
   // Okay, figure out the element size.
   const BinaryOperator *expr = cast<BinaryOperator>(op.E);
