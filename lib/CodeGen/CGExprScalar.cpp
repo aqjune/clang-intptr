@@ -175,7 +175,14 @@ public:
   Value *EmitPointerToBoolConversion(Value *V, QualType QT) {
     Value *Zero = CGF.CGM.getNullPointer(cast<llvm::PointerType>(V->getType()), QT);
 
-    return Builder.CreateICmpNE(V, Zero, "tobool");
+    llvm::IntegerType *I64Ty = llvm::IntegerType::get(VMContext, 64);
+    llvm::Type *pcmpTys[] = { V->getType(), Zero->getType() };
+    Value *pcmpArgs[] = { llvm::ConstantInt::get(I64Ty, (uint64_t)llvm::CmpInst::ICMP_NE), V, Zero };
+    Value *pcmpInst = Builder.CreateCall(
+              CGF.CGM.getIntrinsic(llvm::Intrinsic::pcmp,
+                ArrayRef<llvm::Type *>(pcmpTys, 2)),
+              pcmpArgs, "tobool.pcmp");
+    return pcmpInst;
   }
 
   Value *EmitIntToBoolConversion(Value *V) {
@@ -2673,10 +2680,32 @@ Value *ScalarExprEmitter::EmitSub(const BinOpInfo &op) {
   // Otherwise, this is a pointer subtraction.
 
   // Do the raw subtraction part.
+  llvm::Type *restrictLhsTys[] = { op.LHS->getType(), op.LHS->getType(),
+      op.RHS->getType() };
+  Value *restrictLhsArgs[] = { op.LHS, op.RHS };
+  Value *restrictLhs = Builder.CreateCall(
+            CGF.CGM.getIntrinsic(llvm::Intrinsic::restrict,
+              ArrayRef<llvm::Type *>(restrictLhsTys, 3)),
+            restrictLhsArgs, "sub.ptr.lhs.restrict");
+
+  llvm::Type *restrictRhsTys[] = { op.RHS->getType(), op.RHS->getType(),
+      op.LHS->getType() };
+  Value *restrictRhsArgs[] = { op.RHS, op.LHS };
+  Value *restrictRhs = Builder.CreateCall(
+            CGF.CGM.getIntrinsic(llvm::Intrinsic::restrict,
+              ArrayRef<llvm::Type *>(restrictRhsTys, 3)),
+            restrictRhsArgs, "sub.ptr.rhs.restrict");
+
+  // llvm::Type *psubTys[] = { CGF.PtrDiffTy, restrictLhs->getType(), restrictRhs->getType() };
+  // Value *psubArgs[] = { restrictLhs, restrictRhs };
+  // Value *diffInChars = Builder.CreateCall(
+  //            CGF.CGM.getIntrinsic(llvm::Intrinsic::psub, ArrayRef<llvm::Type *>(psubTys, 3)),
+  //            psubArgs, "sub.ptr.sub");
+
   llvm::Value *LHS
-    = Builder.CreatePtrToInt(op.LHS, CGF.PtrDiffTy, "sub.ptr.lhs.cast");
+    = Builder.CreatePtrToInt(restrictLhs, CGF.PtrDiffTy, "sub.ptr.lhs.cast");
   llvm::Value *RHS
-    = Builder.CreatePtrToInt(op.RHS, CGF.PtrDiffTy, "sub.ptr.rhs.cast");
+    = Builder.CreatePtrToInt(restrictRhs, CGF.PtrDiffTy, "sub.ptr.rhs.cast");
   Value *diffInChars = Builder.CreateSub(LHS, RHS, "sub.ptr.sub");
 
   // Okay, figure out the element size.
@@ -2946,7 +2975,16 @@ Value *ScalarExprEmitter::EmitCompare(const BinaryOperator *E,
       Result = Builder.CreateICmp(SICmpOpc, LHS, RHS, "cmp");
     } else {
       // Unsigned integers and pointers.
-      Result = Builder.CreateICmp(UICmpOpc, LHS, RHS, "cmp");
+      if (LHS->getType()->isPointerTy()) {
+        llvm::IntegerType *I64Ty = llvm::IntegerType::get(VMContext, 64);
+        llvm::Type *pcmpTys[] = { LHS->getType(), RHS->getType() };
+        Value *pcmpArgs[] = { llvm::ConstantInt::get(I64Ty, (uint64_t)UICmpOpc), LHS, RHS };
+        Result = Builder.CreateCall(CGF.CGM.getIntrinsic(llvm::Intrinsic::pcmp,
+                    ArrayRef<llvm::Type *>(pcmpTys, 2)),
+                  pcmpArgs, "cmp.pcmp");
+      } else {
+        Result = Builder.CreateICmp(UICmpOpc, LHS, RHS, "cmp");
+      }
     }
 
     // If this is a vector comparison, sign extend the result to the appropriate
