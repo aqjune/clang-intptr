@@ -175,7 +175,21 @@ public:
   Value *EmitPointerToBoolConversion(Value *V, QualType QT) {
     Value *Zero = CGF.CGM.getNullPointer(cast<llvm::PointerType>(V->getType()), QT);
 
-    return Builder.CreateICmpNE(V, Zero, "tobool");
+    llvm::Type *restrictLhsTys[] = { V->getType(), V->getType(), Zero->getType() };
+    Value *restrictLhsArgs[] = { V, Zero };
+    Value *restrictLhs = Builder.CreateCall(
+              CGF.CGM.getIntrinsic(llvm::Intrinsic::restrict,
+                ArrayRef<llvm::Type *>(restrictLhsTys, 3)),
+              restrictLhsArgs, "tobool.restrict.lhs");
+
+    llvm::Type *restrictRhsTys[] = { Zero->getType(), Zero->getType(), V->getType() };
+    Value *restrictRhsArgs[] = { Zero, V };
+    Value *restrictRhs = Builder.CreateCall(
+              CGF.CGM.getIntrinsic(llvm::Intrinsic::restrict,
+                ArrayRef<llvm::Type *>(restrictRhsTys, 3)),
+              restrictRhsArgs, "tobool.restrict.rhs");
+
+    return Builder.CreateICmpNE(restrictLhs, restrictRhs, "tobool");
   }
 
   Value *EmitIntToBoolConversion(Value *V) {
@@ -2673,10 +2687,32 @@ Value *ScalarExprEmitter::EmitSub(const BinOpInfo &op) {
   // Otherwise, this is a pointer subtraction.
 
   // Do the raw subtraction part.
+  llvm::Type *restrictLhsTys[] = { op.LHS->getType(), op.LHS->getType(),
+      op.RHS->getType() };
+  Value *restrictLhsArgs[] = { op.LHS, op.RHS };
+  Value *restrictLhs = Builder.CreateCall(
+            CGF.CGM.getIntrinsic(llvm::Intrinsic::restrict,
+              ArrayRef<llvm::Type *>(restrictLhsTys, 3)),
+            restrictLhsArgs, "sub.ptr.lhs.restrict");
+
+  llvm::Type *restrictRhsTys[] = { op.RHS->getType(), op.RHS->getType(),
+      op.LHS->getType() };
+  Value *restrictRhsArgs[] = { op.RHS, op.LHS };
+  Value *restrictRhs = Builder.CreateCall(
+            CGF.CGM.getIntrinsic(llvm::Intrinsic::restrict,
+              ArrayRef<llvm::Type *>(restrictRhsTys, 3)),
+            restrictRhsArgs, "sub.ptr.rhs.restrict");
+
+  // llvm::Type *psubTys[] = { CGF.PtrDiffTy, restrictLhs->getType(), restrictRhs->getType() };
+  // Value *psubArgs[] = { restrictLhs, restrictRhs };
+  // Value *diffInChars = Builder.CreateCall(
+  //            CGF.CGM.getIntrinsic(llvm::Intrinsic::psub, ArrayRef<llvm::Type *>(psubTys, 3)),
+  //            psubArgs, "sub.ptr.sub");
+
   llvm::Value *LHS
-    = Builder.CreatePtrToInt(op.LHS, CGF.PtrDiffTy, "sub.ptr.lhs.cast");
+    = Builder.CreatePtrToInt(restrictLhs, CGF.PtrDiffTy, "sub.ptr.lhs.cast");
   llvm::Value *RHS
-    = Builder.CreatePtrToInt(op.RHS, CGF.PtrDiffTy, "sub.ptr.rhs.cast");
+    = Builder.CreatePtrToInt(restrictRhs, CGF.PtrDiffTy, "sub.ptr.rhs.cast");
   Value *diffInChars = Builder.CreateSub(LHS, RHS, "sub.ptr.sub");
 
   // Okay, figure out the element size.
@@ -2946,7 +2982,25 @@ Value *ScalarExprEmitter::EmitCompare(const BinaryOperator *E,
       Result = Builder.CreateICmp(SICmpOpc, LHS, RHS, "cmp");
     } else {
       // Unsigned integers and pointers.
-      Result = Builder.CreateICmp(UICmpOpc, LHS, RHS, "cmp");
+      if (LHS->getType()->isPointerTy()) {
+        llvm::Type *restrictLhsTys[] = { LHS->getType(), LHS->getType(), RHS->getType() };
+        Value *restrictLhsArgs[] = { LHS, RHS };
+        Value *restrictLhs = Builder.CreateCall(
+                  CGF.CGM.getIntrinsic(llvm::Intrinsic::restrict,
+                    ArrayRef<llvm::Type *>(restrictLhsTys, 3)),
+                  restrictLhsArgs, "cmp.restrict.lhs");
+
+        llvm::Type *restrictRhsTys[] = { RHS->getType(), RHS->getType(), LHS->getType() };
+        Value *restrictRhsArgs[] = { RHS, LHS };
+        Value *restrictRhs = Builder.CreateCall(
+                  CGF.CGM.getIntrinsic(llvm::Intrinsic::restrict,
+                    ArrayRef<llvm::Type *>(restrictRhsTys, 3)),
+                  restrictRhsArgs, "cmp.restrict.rhs");
+
+        Result = Builder.CreateICmp(UICmpOpc, restrictLhs, restrictRhs, "cmp");
+      } else {
+        Result = Builder.CreateICmp(UICmpOpc, LHS, RHS, "cmp");
+      }
     }
 
     // If this is a vector comparison, sign extend the result to the appropriate
