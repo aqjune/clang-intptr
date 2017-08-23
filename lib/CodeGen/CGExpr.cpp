@@ -2296,10 +2296,16 @@ LValue CodeGenFunction::EmitUnaryOpLValue(const UnaryOperator *E) {
     LValue LV = EmitLValue(E->getSubExpr());
     bool isInc = E->getOpcode() == UO_PreInc;
 
+    int restrictIdx = -1;
+    if (const DeclRefExpr *DRE = dyn_cast<DeclRefExpr>(E->getSubExpr())) {
+      if (PointerRestrictInfo.contains(DRE))
+        restrictIdx = PointerRestrictInfo.isFirst(DRE);
+    }
+
     if (E->getType()->isAnyComplexType())
       EmitComplexPrePostIncDec(E, LV, isInc, true/*isPre*/);
     else
-      EmitScalarPrePostIncDec(E, LV, isInc, true/*isPre*/);
+      EmitScalarPrePostIncDec(E, LV, isInc, true/*isPre*/, restrictIdx);
     return LV;
   }
   }

@@ -217,7 +217,11 @@ public:
 
   Value *Visit(Expr *E) {
     ApplyDebugLocation DL(CGF, E);
+    //llvm::outs() << "-----BEGIN\n";
+    //E->dump();
+    //llvm::outs() << "---\n";
     return StmtVisitor<ScalarExprEmitter, Value*>::Visit(E);
+    //llvm::outs() << "-----END\n";
   }
 
   Value *VisitStmt(Stmt *S) {
@@ -289,7 +293,26 @@ public:
                                 E->getExprLoc());
       return result.getValue();
     }
-    return EmitLoadOfLValue(E);
+    Value *V = EmitLoadOfLValue(E);
+    if (CGF.PointerRestrictInfo.contains(E)) {
+      CGF.PointerRestrictInfo.Enabled = false;
+
+      bool isfirst = CGF.PointerRestrictInfo.isFirst(E);
+      const DeclRefExpr *RestrictRef = CGF.PointerRestrictInfo.Ptrs[isfirst];
+      Value *LV = VisitDeclRefExpr(const_cast<DeclRefExpr*>(RestrictRef));
+
+      CGF.PointerRestrictInfo.Enabled = true;
+
+      // Now create intrinsic!
+      llvm::Type *restrictTys[] = { V->getType(), V->getType(), LV->getType() };
+      Value *restrictArgs[] = { V, LV };
+      Value *restrictV = CGF.Builder.CreateCall(
+                CGF.CGM.getIntrinsic(llvm::Intrinsic::restrict,
+                  ArrayRef<llvm::Type *>(restrictTys, 3)),
+                restrictArgs, "restrictv");
+      V = restrictV;
+    }
+    return V;
   }
 
   Value *VisitObjCSelectorExpr(ObjCSelectorExpr *E) {
@@ -359,15 +382,36 @@ public:
   }
   Value *VisitUnaryPostInc(const UnaryOperator *E) {
     LValue LV = EmitLValue(E->getSubExpr());
-    return EmitScalarPrePostIncDec(E, LV, true, false);
+    int restrictIdx = -1;
+    if (const DeclRefExpr *DRE = dyn_cast<DeclRefExpr>(E->getSubExpr())) {
+      if (CGF.PointerRestrictInfo.contains(DRE))
+        restrictIdx = CGF.PointerRestrictInfo.isFirst(DRE);
+    }
+    return EmitScalarPrePostIncDec(E, LV, true, false, restrictIdx);
   }
   Value *VisitUnaryPreDec(const UnaryOperator *E) {
     LValue LV = EmitLValue(E->getSubExpr());
-    return EmitScalarPrePostIncDec(E, LV, false, true);
+    int restrictIdx = -1;
+    if (const DeclRefExpr *DRE = dyn_cast<DeclRefExpr>(E->getSubExpr())) {
+      //llvm::outs() << "HI! from VisitUnaryPreDec 1\n";
+      if (CGF.PointerRestrictInfo.contains(DRE)) {
+        //llvm::outs() << "HI! from VisitUnaryPreDec 2\n";
+        restrictIdx = CGF.PointerRestrictInfo.isFirst(DRE);
+      }
+    }
+    return EmitScalarPrePostIncDec(E, LV, false, true, restrictIdx);
   }
   Value *VisitUnaryPreInc(const UnaryOperator *E) {
     LValue LV = EmitLValue(E->getSubExpr());
-    return EmitScalarPrePostIncDec(E, LV, true, true);
+    int restrictIdx = -1;
+    if (const DeclRefExpr *DRE = dyn_cast<DeclRefExpr>(E->getSubExpr())) {
+      //llvm::outs() << "HI! from VisitUnaryPreInc 1\n";
+      if (CGF.PointerRestrictInfo.contains(DRE)) {
+        //llvm::outs() << "HI! from VisitUnaryPreInc 2\n";
+        restrictIdx = CGF.PointerRestrictInfo.isFirst(DRE);
+      }
+    }
+    return EmitScalarPrePostIncDec(E, LV, true, true, restrictIdx);
   }
 
   llvm::Value *EmitIncDecConsiderOverflowBehavior(const UnaryOperator *E,
@@ -375,7 +419,8 @@ public:
                                                   bool IsInc);
 
   llvm::Value *EmitScalarPrePostIncDec(const UnaryOperator *E, LValue LV,
-                                       bool isInc, bool isPre);
+                                       bool isInc, bool isPre,
+                                       int restrictIdxIfPtrIncDec = -1);
 
 
   Value *VisitUnaryAddrOf(const UnaryOperator *E) {
@@ -387,6 +432,8 @@ public:
   Value *VisitUnaryDeref(const UnaryOperator *E) {
     if (E->getType()->isVoidType())
       return Visit(E->getSubExpr()); // the actual value should be unused
+    //llvm::outs() << "HI! from VisitUnaryDeref. E:\n  ";
+    //E->dump();
     return EmitLoadOfLValue(E);
   }
   Value *VisitUnaryPlus(const UnaryOperator *E) {
@@ -1666,7 +1713,8 @@ llvm::Value *ScalarExprEmitter::EmitIncDecConsiderOverflowBehavior(
 
 llvm::Value *
 ScalarExprEmitter::EmitScalarPrePostIncDec(const UnaryOperator *E, LValue LV,
-                                           bool isInc, bool isPre) {
+                                           bool isInc, bool isPre,
+                                           int restrictIdxIfPtrIncDec) {
 
   QualType type = E->getSubExpr()->getType();
   llvm::PHINode *atomicPHI = nullptr;
@@ -1721,6 +1769,24 @@ ScalarExprEmitter::EmitScalarPrePostIncDec(const UnaryOperator *E, LValue LV,
     value = atomicPHI;
   } else {
     value = EmitLoadOfLValue(LV, E->getExprLoc());
+    if (type->isPointerType() && restrictIdxIfPtrIncDec != -1) {
+      CGF.PointerRestrictInfo.Enabled = false;
+
+      const DeclRefExpr *RestrictRef = CGF.PointerRestrictInfo
+                                          .Ptrs[restrictIdxIfPtrIncDec];
+      Value *rv = VisitDeclRefExpr(const_cast<DeclRefExpr*>(RestrictRef));
+
+      CGF.PointerRestrictInfo.Enabled = true;
+
+      // Now create intrinsic!
+      llvm::Type *restrictTys[] = { value->getType(), value->getType(),
+                                    rv->getType() };
+      Value *restrictArgs[] = { value, rv };
+      value = CGF.Builder.CreateCall(
+                CGF.CGM.getIntrinsic(llvm::Intrinsic::restrict,
+                  ArrayRef<llvm::Type *>(restrictTys, 3)),
+                restrictArgs, "restrictv");
+    }
     input = value;
   }
 
@@ -3610,8 +3676,9 @@ Value *CodeGenFunction::EmitComplexToScalarConversion(ComplexPairTy Src,
 
 llvm::Value *CodeGenFunction::
 EmitScalarPrePostIncDec(const UnaryOperator *E, LValue LV,
-                        bool isInc, bool isPre) {
-  return ScalarExprEmitter(*this).EmitScalarPrePostIncDec(E, LV, isInc, isPre);
+                        bool isInc, bool isPre, int restrictIdxIfPtrIncDec) {
+  return ScalarExprEmitter(*this).EmitScalarPrePostIncDec(E, LV, isInc, isPre,
+                                                      restrictIdxIfPtrIncDec);
 }
 
 LValue CodeGenFunction::EmitObjCIsaExpr(const ObjCIsaExpr *E) {

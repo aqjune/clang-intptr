@@ -298,6 +298,32 @@ public:
     ~CGCapturedStmtRAII() { CGF.CapturedStmtInfo = PrevCapturedStmtInfo; }
   };
 
+  /// Maintains info that two pointers LHS and RHS are compared and
+  /// used as a condition for a if/for/while statement.
+  /// if (LHS == RHS) {
+  ///   use(LHS) -> use(call @llvm.restrict(LHS, RHS))
+  ///   use(RHS) -> use(call @llvm.restrict(RHS, LHS))
+  /// }
+  class CGPointerRestrictInfo {
+  public:
+    const DeclRefExpr* Ptrs[2];
+    bool Enabled;
+  public:
+    CGPointerRestrictInfo() {
+      Ptrs[0] = Ptrs[1] = nullptr;
+      Enabled = false;
+    }
+    bool contains(const DeclRefExpr *E) {
+      return Enabled &&
+          (E->getDecl() == Ptrs[0]->getDecl() ||
+           E->getDecl() == Ptrs[1]->getDecl());
+    }
+    bool isFirst(const DeclRefExpr *E) {
+      return (E->getDecl() == Ptrs[0]->getDecl());
+    }
+  };
+  CGPointerRestrictInfo PointerRestrictInfo;
+
   /// \brief Sanitizers enabled for this function.
   SanitizerSet SanOpts;
 
@@ -2250,7 +2276,8 @@ public:
                        QualType IndexType, bool Accessed);
 
   llvm::Value *EmitScalarPrePostIncDec(const UnaryOperator *E, LValue LV,
-                                       bool isInc, bool isPre);
+                                       bool isInc, bool isPre,
+                                       int restrictIdxIfPtrIncDec = -1);
   ComplexPairTy EmitComplexPrePostIncDec(const UnaryOperator *E, LValue LV,
                                          bool isInc, bool isPre);
 

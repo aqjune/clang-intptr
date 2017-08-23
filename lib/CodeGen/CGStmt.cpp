@@ -903,10 +903,183 @@ void CodeGenFunction::EmitForStmt(const ForStmt &S,
   }
   incrementProfileCounter(&S);
 
+  CGPointerRestrictInfo OldPRInfo = this->PointerRestrictInfo;
   {
     // Create a separate cleanup scope for the body, in case it is not
     // a compound statement.
     RunCleanupsScope BodyScope(*this);
+    // Check whether RestrictLHS, RestrictRHS can be used.
+    // Case:
+    // Store LHS and RHS if pointers are compared!
+    if (S.getCond()) {
+#define SAFECAST(T, E) ((E)?(dyn_cast<T>(E)):nullptr)
+      const Stmt* Init = S.getInit();
+      const Expr* Cond = S.getCond();
+      const Expr* Inc = S.getInc();
+
+      const BinaryOperator* InitBO = Init ? dyn_cast<BinaryOperator>(Init):nullptr;
+      const BinaryOperator* CondBO = dyn_cast<BinaryOperator>(Cond);
+      const UnaryOperator *IncUO =   Inc ? dyn_cast<UnaryOperator>(Inc):nullptr;
+      const DeclRefExpr *ItrVarRef = nullptr, *IEndVarRef = nullptr;
+      int the_case = 0;
+      auto isPtrTy = [](QualType QT) {
+        const Type *T = QT.getTypePtr();
+        if (isa<PointerType>(T)) return true;
+        const SubstTemplateTypeParmType *ST = dyn_cast<SubstTemplateTypeParmType>(T);
+        if (ST)
+          return ST->getReplacementType().getTypePtr()->isPointerType();
+        return false;
+      };
+      auto peelImplicitCast = [](const Expr *E) -> const Expr* {
+        if (!E) return nullptr;
+        auto *ICE = dyn_cast<ImplicitCastExpr>(E);
+        if (!ICE) return nullptr;
+        return ICE->getSubExpr();
+      };
+      // Is Cond comparison and Inc increment?
+      if (!Init && CondBO && IncUO && CondBO->getOpcode() == clang::BO_NE
+          && IncUO->isIncrementOp()) {
+        // 1. __fill_a
+        // for(; p != pend; p++) {
+        //   *p = e;
+        // } // p, q are all variables, e has no side effect
+
+        //llvm::outs() << "START!\n";
+        //llvm::errs() << "--------\n";
+        //S.dump();
+        //llvm::errs() << "--------\n";
+        const Expr *CondLHS = peelImplicitCast(CondBO->getLHS());
+        const Expr *CondRHS = peelImplicitCast(CondBO->getRHS());
+        const Expr *IncSubExpr = IncUO->getSubExpr(); // DeclRefExpr
+        //llvm::outs() << "CondLHS's typeclass: " << CondLHS->getType()->getTypeClass() << "\n";
+        //llvm::outs() << "CondRHS's typeclass: " << CondRHS->getType()->getTypeClass() << "\n";
+        //llvm::outs() << "IncSUbExpr's typeclass: " << IncSubExpr->getType()->getTypeClass() << "\n";
+        //llvm::outs() << "Type::Builtin: " << Type::Builtin << "\n";
+        //llvm::outs() << "Type::Record: " << Type::Record << "\n";
+        //llvm::outs() << "Type::SubstTemplateTypeParm: " << Type::SubstTemplateTypeParm << "\n";
+        //llvm::outs() << "Type::TemplateSpecialization: " << Type::TemplateSpecialization << "\n";
+
+        // Are they working on pointer values?
+        if (CondLHS && CondRHS &&
+            isPtrTy(CondLHS->getType()) && isPtrTy(CondRHS->getType()) &&
+            isPtrTy(IncSubExpr->getType())) {
+          //llvm::outs() << "C!\n";
+          auto *CondLHSRef = dyn_cast<DeclRefExpr>(CondLHS);
+          auto *CondRHSRef = dyn_cast<DeclRefExpr>(CondRHS);
+          auto *IncRef = dyn_cast<DeclRefExpr>(IncSubExpr);
+          // Is it either 'p != q; p++' or 'p != q; q++'?
+          if (CondLHSRef && CondRHSRef && IncRef) {
+            auto *CondLHSDecl = dyn_cast<VarDecl>(CondLHSRef->getDecl());
+            auto *CondRHSDecl = dyn_cast<VarDecl>(CondRHSRef->getDecl());
+            auto *IncDecl = dyn_cast<VarDecl>(IncRef->getDecl());
+            //llvm::outs() << "D!\n";
+            if (CondLHSDecl && CondRHSDecl && IncDecl &&
+                (CondLHSDecl != CondRHSDecl) &&
+                (IncDecl == CondLHSDecl || IncDecl == CondRHSDecl)) {
+              //llvm::outs() << "E!\n";
+              // Okay, now check whether for loop body has only one stmt.
+              ItrVarRef  = IncDecl == CondLHSDecl ? CondLHSRef : CondRHSRef;
+              IEndVarRef = IncDecl == CondLHSDecl ? CondRHSRef : CondLHSRef;
+              the_case = 1;
+            }
+          }
+        }
+      } else if (InitBO && CondBO && IncUO &&
+                 InitBO->getOpcode() == BO_Assign &&
+                 InitBO->getRHS()->getType()->isIntegerType() &&
+                 CondBO->getOpcode() == clang::BO_GT &&
+                 IncUO->isDecrementOp()) {
+        // 2. __copy_move_backward
+        // for(n = pend - p; n > 0; --n)
+        //   *(--r) = *(--pend);
+        auto *NRef = dyn_cast<DeclRefExpr>(InitBO->getLHS());
+        auto *SubPendPBO = SAFECAST(BinaryOperator, peelImplicitCast(InitBO->getRHS()));
+        auto *CondLHSRef = SAFECAST(DeclRefExpr, peelImplicitCast(CondBO->getLHS()));
+        auto *CondRHSLit = SAFECAST(IntegerLiteral, peelImplicitCast(CondBO->getRHS()));
+        auto *IncRef = dyn_cast<DeclRefExpr>(IncUO->getSubExpr());
+
+        if (NRef && SubPendPBO && CondLHSRef && CondRHSLit && IncRef) {
+          auto *PendRef = SAFECAST(DeclRefExpr, peelImplicitCast(SubPendPBO->getLHS()));
+          auto *PRef = SAFECAST(DeclRefExpr, peelImplicitCast(SubPendPBO->getRHS()));
+
+          if (PendRef && PRef && isPtrTy(PendRef->getType()) && isPtrTy(PRef->getType())) {
+            auto *NDecl = dyn_cast<VarDecl>(NRef->getDecl());
+            auto *PendDecl = dyn_cast<VarDecl>(PendRef->getDecl());
+            auto *PDecl = dyn_cast<VarDecl>(PRef->getDecl());
+            auto *NDecl2 = dyn_cast<VarDecl>(CondLHSRef->getDecl());
+            auto *NDecl3 = dyn_cast<VarDecl>(IncRef->getDecl());
+            if (NDecl && PendDecl && PDecl && NDecl2 && NDecl3 &&
+                NDecl == NDecl2 && NDecl == NDecl3) {
+              ItrVarRef = PendRef;
+              IEndVarRef = PRef;
+              the_case = 2;
+            }
+          }
+        }
+      }
+      bool doesFit = false;
+      const Stmt *Body = S.getBody();
+      if (Body && the_case != 0) {
+        const BinaryOperator *AssnStmt = nullptr;
+        if (isa<BinaryOperator>(Body))
+          AssnStmt = dyn_cast<BinaryOperator>(Body);
+        else if (const CompoundStmt *CS = dyn_cast<CompoundStmt>(Body)) {
+          if (CS->size() == 1)
+            AssnStmt = dyn_cast<BinaryOperator>(CS->body_front());
+        }
+        if (AssnStmt && AssnStmt->getOpcode() == BO_Assign) {
+          // the_case == 1 or 2
+          //llvm::outs() << "case1-A!\n";
+          const Expr *AssnLHS = AssnStmt->getLHS();
+          const Expr *AssnRHS = AssnStmt->getRHS();
+          if (the_case == 1) {
+            // *p = v;
+            if (!AssnRHS->HasSideEffects(getContext())) {
+              if (const UnaryOperator *UO = dyn_cast<UnaryOperator>(AssnLHS)) {
+                //llvm::outs() << "case1-B!\n";
+                auto *AssnRef = SAFECAST(DeclRefExpr, peelImplicitCast(UO->getSubExpr()));
+                if (UO->getOpcode() == UO_Deref && AssnRef &&
+                    AssnRef->getDecl() == ItrVarRef->getDecl()) {
+                  //llvm::outs() << "case1-C!\n";
+                  // DONE!
+                  doesFit = true;
+                }
+              }
+            }
+          } else if (the_case == 2) {
+            // *(--q) = *(--pend);
+            auto *LHSUO = dyn_cast<UnaryOperator>(AssnLHS);
+            auto *RHSUO = SAFECAST(UnaryOperator, peelImplicitCast(AssnRHS));
+            if (LHSUO && RHSUO && LHSUO->getOpcode() == UO_Deref &&
+                RHSUO->getOpcode() == UO_Deref) {
+              //llvm::outs() << "case2-A!\n";
+              auto *LHSUO2 = SAFECAST(UnaryOperator, peelImplicitCast(LHSUO->getSubExpr()));
+              auto *RHSUO2 = SAFECAST(UnaryOperator, peelImplicitCast(RHSUO->getSubExpr()));
+              if (LHSUO2 && RHSUO2 && LHSUO2->isDecrementOp() && RHSUO2->isDecrementOp()) {
+                //llvm::outs() << "case2-B!\n";
+                DeclRefExpr *LHSRef = dyn_cast<DeclRefExpr>(LHSUO2->getSubExpr());
+                DeclRefExpr *RHSRef = dyn_cast<DeclRefExpr>(RHSUO2->getSubExpr());
+                if (LHSRef && RHSRef && LHSRef->getDecl() != ItrVarRef->getDecl() &&
+                    LHSRef->getDecl() != IEndVarRef->getDecl() &&
+                    RHSRef->getDecl() == ItrVarRef->getDecl()) {
+                  //llvm::outs() << "case2-C!\n";
+                  // DONE!
+                  doesFit = true;
+                }
+              }
+            }
+          }
+        }
+      }
+#undef SAFECAST
+      if (doesFit) {
+        //llvm::outs() << "FIT!\n";
+        this->PointerRestrictInfo.Ptrs[0] = ItrVarRef;
+        this->PointerRestrictInfo.Ptrs[1] = IEndVarRef;
+        this->PointerRestrictInfo.Enabled = true;
+      }
+    }
+
     EmitStmt(S.getBody());
   }
 
@@ -915,6 +1088,8 @@ void CodeGenFunction::EmitForStmt(const ForStmt &S,
     EmitBlock(Continue.getBlock());
     EmitStmt(S.getInc());
   }
+
+  this->PointerRestrictInfo = OldPRInfo;
 
   BreakContinueStack.pop_back();
 
