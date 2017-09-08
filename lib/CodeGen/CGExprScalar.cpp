@@ -1535,15 +1535,13 @@ Value *ScalarExprEmitter::VisitCastExpr(CastExpr *CE) {
     llvm::Value* IntResult =
       Builder.CreateIntCast(Src, MiddleTy, InputSigned, "conv");
 
-    return Builder.CreateIntToPtr(IntResult, DestLLVMTy);
+    return Builder.CreateNewIntToPtr(IntResult, DestLLVMTy);
   }
   case CK_PointerToIntegral: {
     assert(!DestTy->isBooleanType() && "bool should use PointerToBool");
     Value *Src = Visit(E);
-    Builder.CreateCall(
-            CGF.CGM.getIntrinsic(llvm::Intrinsic::capture, Src->getType()),
-            Src);
-   return Builder.CreatePtrToInt(Src, ConvertType(DestTy));
+    Builder.CreateCapture(Src);
+    return Builder.CreateNewPtrToInt(Src, ConvertType(DestTy));
   }
   case CK_ToVoid: {
     CGF.EmitIgnoredExpr(E);
@@ -2677,11 +2675,16 @@ Value *ScalarExprEmitter::EmitSub(const BinOpInfo &op) {
   // Otherwise, this is a pointer subtraction.
 
   // Do the raw subtraction part.
-  llvm::Value *LHS
-    = Builder.CreatePtrToInt(op.LHS, CGF.PtrDiffTy, "sub.ptr.lhs.cast");
-  llvm::Value *RHS
-    = Builder.CreatePtrToInt(op.RHS, CGF.PtrDiffTy, "sub.ptr.rhs.cast");
-  Value *diffInChars = Builder.CreateSub(LHS, RHS, "sub.ptr.sub");
+  llvm::Type *psubTys[] = { CGF.PtrDiffTy, op.LHS->getType(), op.RHS->getType() };
+  Value *psubArgs[] = { op.LHS, op.RHS };
+  Value *diffInChars = Builder.CreateCall(
+             CGF.CGM.getIntrinsic(llvm::Intrinsic::psub, ArrayRef<llvm::Type *>(psubTys, 3)),
+             psubArgs, "sub.ptr.sub");
+  //llvm::Value *LHS
+  //  = Builder.CreatePtrToInt(op.LHS, CGF.PtrDiffTy, "sub.ptr.lhs.cast");
+  //llvm::Value *RHS
+  //  = Builder.CreatePtrToInt(op.RHS, CGF.PtrDiffTy, "sub.ptr.rhs.cast");
+  //Value *diffInChars = Builder.CreateSub(LHS, RHS, "sub.ptr.sub");
 
   // Okay, figure out the element size.
   const BinaryOperator *expr = cast<BinaryOperator>(op.E);
