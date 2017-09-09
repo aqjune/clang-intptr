@@ -607,7 +607,7 @@ CGCallee ItaniumCXXABI::EmitLoadOfMemberFunctionPointer(
   // function pointer.
   CGF.EmitBlock(FnNonVirtual);
   llvm::Value *NonVirtualFn =
-    Builder.CreateIntToPtr(FnAsInt, FTy->getPointerTo(), "memptr.nonvirtualfn");
+    Builder.CreateNewIntToPtr(FnAsInt, FTy->getPointerTo(), "memptr.nonvirtualfn");
   
   // We're done.
   CGF.EmitBlock(FnEnd);

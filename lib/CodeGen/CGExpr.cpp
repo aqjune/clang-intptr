@@ -594,8 +594,9 @@ void CodeGenFunction::EmitTypeCheck(TypeCheckKind TCK, SourceLocation Loc,
 
     // The glvalue must be suitably aligned.
     if (AlignVal) {
+      Builder.CreateCapture(Ptr);
       llvm::Value *Align =
-          Builder.CreateAnd(Builder.CreatePtrToInt(Ptr, IntPtrTy),
+          Builder.CreateAnd(Builder.CreateNewPtrToInt(Ptr, IntPtrTy),
                             llvm::ConstantInt::get(IntPtrTy, AlignVal - 1));
       llvm::Value *Aligned =
         Builder.CreateICmpEQ(Align, llvm::ConstantInt::get(IntPtrTy, 0));
@@ -1589,7 +1590,7 @@ RValue CodeGenFunction::EmitLoadOfGlobalRegLValue(LValue LV) {
   llvm::Value *Call = Builder.CreateCall(
       F, llvm::MetadataAsValue::get(Ty->getContext(), RegName));
   if (OrigTy->isPointerTy())
-    Call = Builder.CreateIntToPtr(Call, OrigTy);
+    Call = Builder.CreateNewIntToPtr(Call, OrigTy);
   return RValue::get(Call);
 }
 
@@ -1674,11 +1675,19 @@ void CodeGenFunction::EmitStoreThroughLValue(RValue Src, LValue Dst,
       llvm::Type *ResultType = IntPtrTy;
       Address dst = EmitPointerWithAlignment(Dst.getBaseIvarExp());
       llvm::Value *RHS = dst.getPointer();
-      RHS = Builder.CreatePtrToInt(RHS, ResultType, "sub.ptr.rhs.cast");
-      llvm::Value *LHS =
-        Builder.CreatePtrToInt(LvalueDst.getPointer(), ResultType,
-                               "sub.ptr.lhs.cast");
-      llvm::Value *BytesBetween = Builder.CreateSub(LHS, RHS, "ivar.offset");
+      //RHS = Builder.CreatePtrToInt(RHS, ResultType, "sub.ptr.rhs.cast");
+      //llvm::Value *LHS =
+      //  Builder.CreatePtrToInt(LvalueDst.getPointer(), ResultType,
+      //                         "sub.ptr.lhs.cast");
+      //llvm::Value *BytesBetween = Builder.CreateSub(LHS, RHS, "ivar.offset");
+      llvm::Type *psubTys[] = { ResultType, LvalueDst.getPointer()->getType(),
+                                RHS->getType() };
+      llvm::Value *psubArgs[] = { LvalueDst.getPointer(), RHS };
+      llvm::Value *BytesBetween = Builder.CreateCall(
+                 CGM.getIntrinsic(llvm::Intrinsic::psub,
+                 ArrayRef<llvm::Type *>(psubTys, 3)),
+                 psubArgs, "ivar.offset");
+
       CGM.getObjCRuntime().EmitObjCIvarAssign(*this, src, dst,
                                               BytesBetween);
     } else if (Dst.isGlobalObjCRef()) {
@@ -1848,8 +1857,10 @@ void CodeGenFunction::EmitStoreThroughGlobalRegLValue(RValue Src, LValue Dst) {
 
   llvm::Value *F = CGM.getIntrinsic(llvm::Intrinsic::write_register, Types);
   llvm::Value *Value = Src.getScalarVal();
-  if (OrigTy->isPointerTy())
-    Value = Builder.CreatePtrToInt(Value, Ty);
+  if (OrigTy->isPointerTy()) {
+    Builder.CreateCapture(Value);
+    Value = Builder.CreateNewPtrToInt(Value, Ty);
+  }
   Builder.CreateCall(
       F, {llvm::MetadataAsValue::get(Ty->getContext(), RegName), Value});
 }
@@ -2417,7 +2428,8 @@ llvm::Value *CodeGenFunction::EmitCheckValue(llvm::Value *V) {
     Builder.CreateStore(V, Ptr);
     V = Ptr.getPointer();
   }
-  return Builder.CreatePtrToInt(V, TargetTy);
+  Builder.CreateCapture(V);
+  return Builder.CreateNewPtrToInt(V, TargetTy);
 }
 
 /// \brief Emit a representation of a SourceLocation for passing to a handler
