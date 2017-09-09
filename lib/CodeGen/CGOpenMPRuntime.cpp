@@ -4474,10 +4474,18 @@ void CGOpenMPRuntime::emitTaskCall(CodeGenFunction &CGF, SourceLocation Loc,
             CGF.EmitOMPArraySectionExpr(ASE, /*LowerBound=*/false);
         llvm::Value *UpAddr =
             CGF.Builder.CreateConstGEP1_32(UpAddrLVal.getPointer(), /*Idx0=*/1);
-        llvm::Value *LowIntPtr =
-            CGF.Builder.CreatePtrToInt(Addr.getPointer(), CGM.SizeTy);
-        llvm::Value *UpIntPtr = CGF.Builder.CreatePtrToInt(UpAddr, CGM.SizeTy);
-        Size = CGF.Builder.CreateNUWSub(UpIntPtr, LowIntPtr);
+        //llvm::Value *LowIntPtr =
+        //    CGF.Builder.CreatePtrToInt(Addr.getPointer(), CGM.SizeTy);
+        //llvm::Value *UpIntPtr = CGF.Builder.CreatePtrToInt(UpAddr, CGM.SizeTy);
+
+        //Size = CGF.Builder.CreateNUWSub(UpIntPtr, LowIntPtr);
+  
+        llvm::Type *psubTys[] = { CGM.SizeTy, UpAddr->getType(),
+            Addr.getPointer()->getType() };
+        llvm::Value *psubArgs[] = { UpAddr, Addr.getPointer() };
+        Size = CGF.Builder.CreateCall(
+            CGF.CGM.getIntrinsic(llvm::Intrinsic::psub, ArrayRef<llvm::Type *>(psubTys, 3)),
+            psubArgs);
       } else
         Size = CGF.getTypeSize(Ty);
       auto Base = CGF.MakeAddrLValue(
@@ -4486,8 +4494,9 @@ void CGOpenMPRuntime::emitTaskCall(CodeGenFunction &CGF, SourceLocation Loc,
       // deps[i].base_addr = &<Dependences[i].second>;
       auto BaseAddrLVal = CGF.EmitLValueForField(
           Base, *std::next(KmpDependInfoRD->field_begin(), BaseAddr));
+      CGF.Builder.CreateCapture(Addr.getPointer());
       CGF.EmitStoreOfScalar(
-          CGF.Builder.CreatePtrToInt(Addr.getPointer(), CGF.IntPtrTy),
+          CGF.Builder.CreateNewPtrToInt(Addr.getPointer(), CGF.IntPtrTy),
           BaseAddrLVal);
       // deps[i].len = sizeof(<Dependences[i].second>);
       auto LenLVal = CGF.EmitLValueForField(
@@ -4842,8 +4851,9 @@ llvm::Value *CGOpenMPRuntime::emitReductionFunction(
       llvm::Value *Ptr = CGF.Builder.CreateLoad(Elem);
       auto *VLA = CGF.getContext().getAsVariableArrayType(PrivTy);
       auto *OVE = cast<OpaqueValueExpr>(VLA->getSizeExpr());
+      CGF.Builder.CreateCapture(Ptr);
       CodeGenFunction::OpaqueValueMapping OpaqueMap(
-          CGF, OVE, RValue::get(CGF.Builder.CreatePtrToInt(Ptr, CGF.SizeTy)));
+          CGF, OVE, RValue::get(CGF.Builder.CreateNewPtrToInt(Ptr, CGF.SizeTy)));
       CGF.EmitVariablyModifiedType(PrivTy);
     }
   }
@@ -4989,7 +4999,7 @@ void CGOpenMPRuntime::emitReduction(CodeGenFunction &CGF, SourceLocation Loc,
                  CGF.getContext().getAsVariableArrayType((*IPriv)->getType()))
               .first,
           CGF.SizeTy, /*isSigned=*/false);
-      CGF.Builder.CreateStore(CGF.Builder.CreateIntToPtr(Size, CGF.VoidPtrTy),
+      CGF.Builder.CreateStore(CGF.Builder.CreateNewIntToPtr(Size, CGF.VoidPtrTy),
                               Elem);
     }
   }

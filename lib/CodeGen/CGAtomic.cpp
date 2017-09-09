@@ -1375,7 +1375,7 @@ RValue AtomicInfo::ConvertIntToValueOrAtomic(llvm::Value *IntVal,
       assert(IntVal->getType() == ValTy && "Different integer types.");
       return RValue::get(CGF.EmitFromMemory(IntVal, ValueTy));
     } else if (ValTy->isPointerTy())
-      return RValue::get(CGF.Builder.CreateIntToPtr(IntVal, ValTy));
+      return RValue::get(CGF.Builder.CreateNewIntToPtr(IntVal, ValTy));
     else if (llvm::CastInst::isBitCastable(IntVal->getType(), ValTy))
       return RValue::get(CGF.Builder.CreateBitCast(IntVal, ValTy));
   }
@@ -1559,9 +1559,10 @@ llvm::Value *AtomicInfo::convertRValueToInt(RValue RVal) const {
       llvm::IntegerType *InputIntTy = llvm::IntegerType::get(
           CGF.getLLVMContext(),
           LVal.isSimple() ? getValueSizeInBits() : getAtomicSizeInBits());
-      if (isa<llvm::PointerType>(Value->getType()))
-        return CGF.Builder.CreatePtrToInt(Value, InputIntTy);
-      else if (llvm::BitCastInst::isBitCastable(Value->getType(), InputIntTy))
+      if (isa<llvm::PointerType>(Value->getType())) {
+        CGF.Builder.CreateCapture(Value);
+        return CGF.Builder.CreateNewPtrToInt(Value, InputIntTy);
+      } else if (llvm::BitCastInst::isBitCastable(Value->getType(), InputIntTy))
         return CGF.Builder.CreateBitCast(Value, InputIntTy);
     }
   }

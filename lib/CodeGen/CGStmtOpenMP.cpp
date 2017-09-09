@@ -772,10 +772,12 @@ bool CodeGenFunction::EmitOMPCopyinClause(const OMPExecutableDirective &D) {
           // need to copy data.
           CopyBegin = createBasicBlock("copyin.not.master");
           CopyEnd = createBasicBlock("copyin.not.master.end");
+          Builder.CreateCapture(MasterAddr.getPointer());
+          Builder.CreateCapture(PrivateAddr.getPointer());
           Builder.CreateCondBr(
               Builder.CreateICmpNE(
-                  Builder.CreatePtrToInt(MasterAddr.getPointer(), CGM.IntPtrTy),
-                  Builder.CreatePtrToInt(PrivateAddr.getPointer(), CGM.IntPtrTy)),
+                  Builder.CreateNewPtrToInt(MasterAddr.getPointer(), CGM.IntPtrTy),
+                  Builder.CreateNewPtrToInt(PrivateAddr.getPointer(), CGM.IntPtrTy)),
               CopyBegin, CopyEnd);
           EmitBlock(CopyBegin);
         }

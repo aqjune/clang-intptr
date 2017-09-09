@@ -2312,7 +2312,7 @@ void CodeGenFunction::emitByrefStructureInit(const AutoVarEmission &emission) {
   int isa = 0;
   if (type.isObjCGCWeak())
     isa = 1;
-  V = Builder.CreateIntToPtr(Builder.getInt32(isa), Int8PtrTy, "isa");
+  V = Builder.CreateNewIntToPtr(Builder.getInt32(isa), Int8PtrTy, "isa");
   storeHeaderField(V, getPointerSize(), "byref.isa");
 
   // Store the address of the variable into its own forwarding pointer.

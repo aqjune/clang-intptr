@@ -1127,7 +1127,7 @@ static void emitReductionListCopy(
       auto *ScratchPadElemAbsolutePtrVal =
           Bld.CreateAdd(DestBase.getPointer(), CurrentOffset);
       ScratchPadElemAbsolutePtrVal =
-          Bld.CreateIntToPtr(ScratchPadElemAbsolutePtrVal, CGF.VoidPtrTy);
+          Bld.CreateNewIntToPtr(ScratchPadElemAbsolutePtrVal, CGF.VoidPtrTy);
       Address ScratchpadPtr =
           Address(ScratchPadElemAbsolutePtrVal,
                   C.getTypeAlignInChars(Private->getType()));
@@ -1147,7 +1147,7 @@ static void emitReductionListCopy(
       auto *ScratchPadElemAbsolutePtrVal =
           Bld.CreateAdd(SrcBase.getPointer(), CurrentOffset);
       ScratchPadElemAbsolutePtrVal =
-          Bld.CreateIntToPtr(ScratchPadElemAbsolutePtrVal, CGF.VoidPtrTy);
+          Bld.CreateNewIntToPtr(ScratchPadElemAbsolutePtrVal, CGF.VoidPtrTy);
       SrcElementAddr = Address(ScratchPadElemAbsolutePtrVal,
                                C.getTypeAlignInChars(Private->getType()));
       IncrScratchpadSrc = true;
@@ -1312,8 +1312,9 @@ emitReduceScratchpadFunction(CodeGenModule &CGM,
       AddrShouldReduceArg, /*Volatile=*/false, Int32Ty, SourceLocation());
 
   // The absolute ptr address to the base addr of the next element to copy.
+  Bld.CreateCapture(ScratchPadBase);
   llvm::Value *CumulativeElemBasePtr =
-      Bld.CreatePtrToInt(ScratchPadBase, CGM.SizeTy);
+      Bld.CreateNewPtrToInt(ScratchPadBase, CGM.SizeTy);
   Address SrcDataAddr(CumulativeElemBasePtr, CGF.getPointerAlign());
 
   // Create a Remote Reduce list to store the elements read from the
@@ -1427,8 +1428,9 @@ static llvm::Value *emitCopyToScratchpad(CodeGenModule &CGM,
                         CGF.SizeTy, /*isSigned=*/true);
 
   // The absolute ptr address to the base addr of the next element to copy.
+  Bld.CreateCapture(ScratchPadBase);
   llvm::Value *CumulativeElemBasePtr =
-      Bld.CreatePtrToInt(ScratchPadBase, CGM.SizeTy);
+      Bld.CreateNewPtrToInt(ScratchPadBase, CGM.SizeTy);
   Address DestDataAddr(CumulativeElemBasePtr, CGF.getPointerAlign());
 
   emitReductionListCopy(ThreadToScratchpad, CGF, ReductionArrayTy, Privates,
@@ -2142,7 +2144,7 @@ void CGOpenMPRuntimeNVPTX::emitReduction(
                  CGF.getContext().getAsVariableArrayType((*IPriv)->getType()))
               .first,
           CGF.SizeTy, /*isSigned=*/false);
-      CGF.Builder.CreateStore(CGF.Builder.CreateIntToPtr(Size, CGF.VoidPtrTy),
+      CGF.Builder.CreateStore(CGF.Builder.CreateNewIntToPtr(Size, CGF.VoidPtrTy),
                               Elem);
     }
   }

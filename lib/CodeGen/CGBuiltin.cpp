@@ -72,8 +72,10 @@ static Value *EmitToInt(CodeGenFunction &CGF, llvm::Value *V,
                         QualType T, llvm::IntegerType *IntType) {
   V = CGF.EmitToMemory(V, T);
 
-  if (V->getType()->isPointerTy())
-    return CGF.Builder.CreatePtrToInt(V, IntType);
+  if (V->getType()->isPointerTy()) {
+    CGF.Builder.CreateCapture(V);
+    return CGF.Builder.CreateNewPtrToInt(V, IntType);
+  }
 
   assert(V->getType() == IntType);
   return V;
@@ -84,7 +86,7 @@ static Value *EmitFromInt(CodeGenFunction &CGF, llvm::Value *V,
   V = CGF.EmitFromMemory(V, T);
 
   if (ResultType->isPointerTy())
-    return CGF.Builder.CreateIntToPtr(V, ResultType);
+    return CGF.Builder.CreateNewIntToPtr(V, ResultType);
 
   assert(V->getType() == ResultType);
   return V;
@@ -1444,7 +1446,8 @@ RValue CodeGenFunction::EmitBuiltinExpr(const FunctionDecl *FD,
 
     // Cast the pointer to intptr_t.
     Value *Ptr = EmitScalarExpr(E->getArg(0));
-    Value *Result = Builder.CreatePtrToInt(Ptr, IntPtrTy, "extend.cast");
+    Builder.CreateCapture(Ptr);
+    Value *Result = Builder.CreateNewPtrToInt(Ptr, IntPtrTy, "extend.cast");
 
     // If that's 64 bits, we're done.
     if (IntPtrTy->getBitWidth() == 64)
@@ -2240,10 +2243,13 @@ RValue CodeGenFunction::EmitBuiltinExpr(const FunctionDecl *FD,
 
     llvm::Value *Exchange = EmitScalarExpr(E->getArg(1));
     RTy = Exchange->getType();
-    Exchange = Builder.CreatePtrToInt(Exchange, IntType);
+    Builder.CreateCapture(Exchange);
+    Exchange = Builder.CreateNewPtrToInt(Exchange, IntType);
 
+    llvm::Value *Val2 = EmitScalarExpr(E->getArg(2));
+    Builder.CreateCapture(Val2);
     llvm::Value *Comparand =
-      Builder.CreatePtrToInt(EmitScalarExpr(E->getArg(2)), IntType);
+      Builder.CreateNewPtrToInt(Val2, IntType);
 
     auto Result =
         Builder.CreateAtomicCmpXchg(Destination, Comparand, Exchange,
@@ -2251,7 +2257,7 @@ RValue CodeGenFunction::EmitBuiltinExpr(const FunctionDecl *FD,
                                     AtomicOrdering::SequentiallyConsistent);
     Result->setVolatile(true);
 
-    return RValue::get(Builder.CreateIntToPtr(Builder.CreateExtractValue(Result,
+    return RValue::get(Builder.CreateNewIntToPtr(Builder.CreateExtractValue(Result,
                                                                          0),
                                               RTy));
   }
@@ -4448,7 +4454,7 @@ static Value *EmitSpecialRegisterBuiltin(CodeGenFunction &CGF,
 
     if (ValueType->isPointerTy())
       // Have i32/i64 result (Call) but want to return a VoidPtrTy (i8*).
-      return Builder.CreateIntToPtr(Call, ValueType);
+      return Builder.CreateNewIntToPtr(Call, ValueType);
 
     return Call;
   }
@@ -4463,7 +4469,8 @@ static Value *EmitSpecialRegisterBuiltin(CodeGenFunction &CGF,
 
   if (ValueType->isPointerTy()) {
     // Have VoidPtrTy ArgValue but want to return an i32/i64.
-    ArgValue = Builder.CreatePtrToInt(ArgValue, RegisterType);
+    Builder.CreateCapture(ArgValue);
+    ArgValue = Builder.CreateNewPtrToInt(ArgValue, RegisterType);
     return Builder.CreateCall(F, { Metadata, ArgValue });
   }
 
@@ -4685,7 +4692,7 @@ Value *CodeGenFunction::EmitARMBuiltinExpr(unsigned BuiltinID,
     Value *Val = Builder.CreateCall(F, LoadAddr, "ldrex");
 
     if (RealResTy->isPointerTy())
-      return Builder.CreateIntToPtr(Val, RealResTy);
+      return Builder.CreateNewIntToPtr(Val, RealResTy);
     else {
       llvm::Type *IntResTy = llvm::IntegerType::get(
           getLLVMContext(), CGM.getDataLayout().getTypeSizeInBits(RealResTy));
@@ -4726,9 +4733,10 @@ Value *CodeGenFunction::EmitARMBuiltinExpr(unsigned BuiltinID,
                                                  getContext().getTypeSize(Ty));
     StoreAddr = Builder.CreateBitCast(StoreAddr, StoreTy->getPointerTo());
 
-    if (StoreVal->getType()->isPointerTy())
-      StoreVal = Builder.CreatePtrToInt(StoreVal, Int32Ty);
-    else {
+    if (StoreVal->getType()->isPointerTy()) {
+      Builder.CreateCapture(StoreVal);
+      StoreVal = Builder.CreateNewPtrToInt(StoreVal, Int32Ty);
+    } else {
       llvm::Type *IntTy = llvm::IntegerType::get(
           getLLVMContext(),
           CGM.getDataLayout().getTypeSizeInBits(StoreVal->getType()));
@@ -5518,7 +5526,7 @@ Value *CodeGenFunction::EmitAArch64BuiltinExpr(unsigned BuiltinID,
     Value *Val = Builder.CreateCall(F, LoadAddr, "ldxr");
 
     if (RealResTy->isPointerTy())
-      return Builder.CreateIntToPtr(Val, RealResTy);
+      return Builder.CreateNewIntToPtr(Val, RealResTy);
 
     llvm::Type *IntResTy = llvm::IntegerType::get(
         getLLVMContext(), CGM.getDataLayout().getTypeSizeInBits(RealResTy));
@@ -5557,9 +5565,10 @@ Value *CodeGenFunction::EmitAArch64BuiltinExpr(unsigned BuiltinID,
                                                  getContext().getTypeSize(Ty));
     StoreAddr = Builder.CreateBitCast(StoreAddr, StoreTy->getPointerTo());
 
-    if (StoreVal->getType()->isPointerTy())
-      StoreVal = Builder.CreatePtrToInt(StoreVal, Int64Ty);
-    else {
+    if (StoreVal->getType()->isPointerTy()) {
+      Builder.CreateCapture(StoreVal);
+      StoreVal = Builder.CreateNewPtrToInt(StoreVal, Int64Ty);
+    } else {
       llvm::Type *IntTy = llvm::IntegerType::get(
           getLLVMContext(),
           CGM.getDataLayout().getTypeSizeInBits(StoreVal->getType()));
@@ -8408,7 +8417,7 @@ Value *CodeGenFunction::EmitX86BuiltinExpr(unsigned BuiltinID,
   case X86::BI__readfsdword:
   case X86::BI__readfsqword: {
     llvm::Type *IntTy = ConvertType(E->getType());
-    Value *Ptr = Builder.CreateIntToPtr(EmitScalarExpr(E->getArg(0)),
+    Value *Ptr = Builder.CreateNewIntToPtr(EmitScalarExpr(E->getArg(0)),
                                         llvm::PointerType::get(IntTy, 257));
     LoadInst *Load = Builder.CreateAlignedLoad(
         IntTy, Ptr, getContext().getTypeAlignInChars(E->getType()));
@@ -8420,7 +8429,7 @@ Value *CodeGenFunction::EmitX86BuiltinExpr(unsigned BuiltinID,
   case X86::BI__readgsdword:
   case X86::BI__readgsqword: {
     llvm::Type *IntTy = ConvertType(E->getType());
-    Value *Ptr = Builder.CreateIntToPtr(EmitScalarExpr(E->getArg(0)),
+    Value *Ptr = Builder.CreateNewIntToPtr(EmitScalarExpr(E->getArg(0)),
                                         llvm::PointerType::get(IntTy, 256));
     LoadInst *Load = Builder.CreateAlignedLoad(
         IntTy, Ptr, getContext().getTypeAlignInChars(E->getType()));

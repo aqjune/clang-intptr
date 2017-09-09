@@ -992,13 +992,14 @@ Value *ScalarExprEmitter::EmitScalarConversion(Value *Src, QualType SrcType,
     llvm::Value* IntResult =
         Builder.CreateIntCast(Src, MiddleTy, InputSigned, "conv");
     // Then, cast to pointer.
-    return Builder.CreateIntToPtr(IntResult, DstTy, "conv");
+    return Builder.CreateNewIntToPtr(IntResult, DstTy, "conv");
   }
 
   if (isa<llvm::PointerType>(SrcTy)) {
     // Must be an ptr to int cast.
     assert(isa<llvm::IntegerType>(DstTy) && "not ptr->int?");
-    return Builder.CreatePtrToInt(Src, DstTy, "conv");
+    Builder.CreateCapture(Src);
+    return Builder.CreateNewPtrToInt(Src, DstTy, "conv");
   }
 
   // A scalar can be splatted to an extended vector of the same element type
@@ -2702,7 +2703,7 @@ static Value *emitPointerArithmetic(CodeGenFunction &CGF,
                                                        op.Opcode,
                                                        expr->getLHS(), 
                                                        expr->getRHS()))
-    return CGF.Builder.CreateIntToPtr(index, pointer->getType());
+    return CGF.Builder.CreateNewIntToPtr(index, pointer->getType());
 
   if (width != DL.getTypeSizeInBits(PtrTy)) {
     // Zero-extend or sign-extend the pointer value according to
@@ -2924,11 +2925,6 @@ Value *ScalarExprEmitter::EmitSub(const BinOpInfo &op) {
   Value *diffInChars = Builder.CreateCall(
              CGF.CGM.getIntrinsic(llvm::Intrinsic::psub, ArrayRef<llvm::Type *>(psubTys, 3)),
              psubArgs, "sub.ptr.sub");
-  //llvm::Value *LHS
-  //  = Builder.CreatePtrToInt(op.LHS, CGF.PtrDiffTy, "sub.ptr.lhs.cast");
-  //llvm::Value *RHS
-  //  = Builder.CreatePtrToInt(op.RHS, CGF.PtrDiffTy, "sub.ptr.rhs.cast");
-  //Value *diffInChars = Builder.CreateSub(LHS, RHS, "sub.ptr.sub");
 
   // Okay, figure out the element size.
   const BinaryOperator *expr = cast<BinaryOperator>(op.E);
@@ -3662,7 +3658,7 @@ Value *ScalarExprEmitter::VisitVAArgExpr(VAArgExpr *VE) {
   // If EmitVAArg promoted the type, we must truncate it.
   if (ArgTy != Val->getType()) {
     if (ArgTy->isPointerTy() && !Val->getType()->isPointerTy())
-      Val = Builder.CreateIntToPtr(Val, ArgTy);
+      Val = Builder.CreateNewIntToPtr(Val, ArgTy);
     else
       Val = Builder.CreateTrunc(Val, ArgTy);
   }
@@ -3721,8 +3717,10 @@ static Value *createCastsForTypeOfSameSize(CGBuilderTy &Builder,
   // Case 3.
   if (SrcTy->isPointerTy() && !DstTy->isPointerTy()) {
     // Case 3b.
-    if (!DstTy->isIntegerTy())
-      Src = Builder.CreatePtrToInt(Src, DL.getIntPtrType(SrcTy));
+    if (!DstTy->isIntegerTy()) {
+      Builder.CreateCapture(Src);
+      Src = Builder.CreateNewPtrToInt(Src, DL.getIntPtrType(SrcTy));
+    }
     // Cases 3a and 3b.
     return Builder.CreateBitOrPointerCast(Src, DstTy, Name);
   }
@@ -3731,7 +3729,7 @@ static Value *createCastsForTypeOfSameSize(CGBuilderTy &Builder,
   if (!SrcTy->isIntegerTy())
     Src = Builder.CreateBitCast(Src, DL.getIntPtrType(DstTy));
   // Cases 4a and 4b.
-  return Builder.CreateIntToPtr(Src, DstTy, Name);
+  return Builder.CreateNewIntToPtr(Src, DstTy, Name);
 }
 
 Value *ScalarExprEmitter::VisitAsTypeExpr(AsTypeExpr *E) {
@@ -3991,7 +3989,8 @@ Value *CodeGenFunction::EmitCheckedInBoundsGEP(Value *Ptr,
 
   // Now that we've computed the total offset, add it to the base pointer (with
   // wrapping semantics).
-  auto *IntPtr = Builder.CreatePtrToInt(GEP->getPointerOperand(), IntPtrTy);
+  Builder.CreateCapture(GEP->getPointerOperand());
+  auto *IntPtr = Builder.CreateNewPtrToInt(GEP->getPointerOperand(), IntPtrTy);
   auto *ComputedGEP = Builder.CreateAdd(IntPtr, TotalOffset);
 
   // The GEP is valid if:

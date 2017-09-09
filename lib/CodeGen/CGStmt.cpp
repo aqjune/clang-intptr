@@ -2047,8 +2047,10 @@ void CodeGenFunction::EmitAsmStmt(const AsmStmt &S) {
       if (getContext().getTypeSize(OutputType) >
           getContext().getTypeSize(InputTy)) {
         // Use ptrtoint as appropriate so that we can do our extension.
-        if (isa<llvm::PointerType>(Arg->getType()))
-          Arg = Builder.CreatePtrToInt(Arg, IntPtrTy);
+        if (isa<llvm::PointerType>(Arg->getType())) {
+          Builder.CreateCapture(Arg);
+          Arg = Builder.CreateNewPtrToInt(Arg, IntPtrTy);
+        }
         llvm::Type *OutputTy = ConvertType(OutputType);
         if (isa<llvm::IntegerType>(OutputTy))
           Arg = Builder.CreateZExt(Arg, OutputTy);
@@ -2187,10 +2189,11 @@ void CodeGenFunction::EmitAsmStmt(const AsmStmt &S) {
         uint64_t ResSize = CGM.getDataLayout().getTypeSizeInBits(TruncTy);
         Tmp = Builder.CreateTrunc(Tmp,
                    llvm::IntegerType::get(getLLVMContext(), (unsigned)ResSize));
-        Tmp = Builder.CreateIntToPtr(Tmp, TruncTy);
+        Tmp = Builder.CreateNewIntToPtr(Tmp, TruncTy);
       } else if (Tmp->getType()->isPointerTy() && TruncTy->isIntegerTy()) {
         uint64_t TmpSize =CGM.getDataLayout().getTypeSizeInBits(Tmp->getType());
-        Tmp = Builder.CreatePtrToInt(Tmp,
+        Builder.CreateCapture(Tmp);
+        Tmp = Builder.CreateNewPtrToInt(Tmp,
                    llvm::IntegerType::get(getLLVMContext(), (unsigned)TmpSize));
         Tmp = Builder.CreateTrunc(Tmp, TruncTy);
       } else if (TruncTy->isIntegerTy()) {

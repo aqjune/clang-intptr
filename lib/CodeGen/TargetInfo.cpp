@@ -245,12 +245,13 @@ static llvm::Value *emitRoundPointerUpToAlignment(CodeGenFunction &CGF,
                                                   CharUnits Align) {
   llvm::Value *PtrAsInt = Ptr;
   // OverflowArgArea = (OverflowArgArea + Align - 1) & -Align;
-  PtrAsInt = CGF.Builder.CreatePtrToInt(PtrAsInt, CGF.IntPtrTy);
+  CGF.Builder.CreateCapture(Ptr);
+  PtrAsInt = CGF.Builder.CreateNewPtrToInt(PtrAsInt, CGF.IntPtrTy);
   PtrAsInt = CGF.Builder.CreateAdd(PtrAsInt,
         llvm::ConstantInt::get(CGF.IntPtrTy, Align.getQuantity() - 1));
   PtrAsInt = CGF.Builder.CreateAnd(PtrAsInt,
            llvm::ConstantInt::get(CGF.IntPtrTy, -Align.getQuantity()));
-  PtrAsInt = CGF.Builder.CreateIntToPtr(PtrAsInt,
+  PtrAsInt = CGF.Builder.CreateNewIntToPtr(PtrAsInt,
                                         Ptr->getType(),
                                         Ptr->getName() + ".aligned");
   return PtrAsInt;
@@ -5318,7 +5319,8 @@ Address AArch64ABIInfo::EmitAAPCSVAArg(Address VAListAddr,
   if (!IsIndirect && TyAlign.getQuantity() > 8) {
     int Align = TyAlign.getQuantity();
 
-    OnStackPtr = CGF.Builder.CreatePtrToInt(OnStackPtr, CGF.Int64Ty);
+    CGF.Builder.CreateCapture(OnStackPtr);
+    OnStackPtr = CGF.Builder.CreateNewPtrToInt(OnStackPtr, CGF.Int64Ty);
 
     OnStackPtr = CGF.Builder.CreateAdd(
         OnStackPtr, llvm::ConstantInt::get(CGF.Int64Ty, Align - 1),
@@ -5327,7 +5329,7 @@ Address AArch64ABIInfo::EmitAAPCSVAArg(Address VAListAddr,
         OnStackPtr, llvm::ConstantInt::get(CGF.Int64Ty, -Align),
         "align_stack");
 
-    OnStackPtr = CGF.Builder.CreateIntToPtr(OnStackPtr, CGF.Int8PtrTy);
+    OnStackPtr = CGF.Builder.CreateNewIntToPtr(OnStackPtr, CGF.Int8PtrTy);
   }
   Address OnStackAddr(OnStackPtr,
                       std::max(CharUnits::fromQuantity(8), TyAlign));
@@ -7001,7 +7003,7 @@ Address MipsABIInfo::EmitVAArg(CodeGenFunction &CGF, Address VAListAddr,
                                                  : CGF.IntPtrTy);
     llvm::Value *V = CGF.Builder.CreateTrunc(Promoted, IntTy);
     if (OrigTy->isPointerType())
-      V = CGF.Builder.CreateIntToPtr(V, Temp.getElementType());
+      V = CGF.Builder.CreateNewIntToPtr(V, Temp.getElementType());
 
     CGF.Builder.CreateStore(V, Temp);
     Addr = Temp;

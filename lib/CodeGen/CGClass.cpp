@@ -781,7 +781,8 @@ void CodeGenFunction::EmitAsanPrologueOrEpilogue(bool Prologue) {
                     : "__asan_unpoison_intra_object_redzone");
 
   llvm::Value *ThisPtr = LoadCXXThis();
-  ThisPtr = Builder.CreatePtrToInt(ThisPtr, IntPtrTy);
+  Builder.CreateCapture(ThisPtr);
+  ThisPtr = Builder.CreateNewPtrToInt(ThisPtr, IntPtrTy);
   uint64_t TypeSize = Info.getNonVirtualSize().getQuantity();
   // For each field check if it has sufficient padding,
   // if so (un)poison it with a call.
