@@ -240,7 +240,6 @@ static llvm::Value *emitRoundPointerUpToAlignment(CodeGenFunction &CGF,
                                                   CharUnits Align) {
   llvm::Value *PtrAsInt = Ptr;
   // OverflowArgArea = (OverflowArgArea + Align - 1) & -Align;
-  CGF.Builder.CreateCapture(Ptr);
   PtrAsInt = CGF.Builder.CreateNewPtrToInt(PtrAsInt, CGF.IntPtrTy);
   PtrAsInt = CGF.Builder.CreateAdd(PtrAsInt,
         llvm::ConstantInt::get(CGF.IntPtrTy, Align.getQuantity() - 1));
@@ -5202,7 +5201,6 @@ Address AArch64ABIInfo::EmitAAPCSVAArg(Address VAListAddr,
   if (!IsIndirect && TyAlign.getQuantity() > 8) {
     int Align = TyAlign.getQuantity();
 
-    CGF.Builder.CreateCapture(OnStackPtr);
     OnStackPtr = CGF.Builder.CreateNewPtrToInt(OnStackPtr, CGF.Int64Ty);
 
     OnStackPtr = CGF.Builder.CreateAdd(

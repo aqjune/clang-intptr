@@ -754,8 +754,6 @@ bool CodeGenFunction::EmitOMPCopyinClause(const OMPExecutableDirective &D) {
           // need to copy data.
           CopyBegin = createBasicBlock("copyin.not.master");
           CopyEnd = createBasicBlock("copyin.not.master.end");
-          Builder.CreateCapture(MasterAddr.getPointer());
-          Builder.CreateCapture(PrivateAddr.getPointer());
           Builder.CreateCondBr(
               Builder.CreateICmpNE(
                   Builder.CreateNewPtrToInt(MasterAddr.getPointer(), CGM.IntPtrTy),

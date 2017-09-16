@@ -594,7 +594,6 @@ void CodeGenFunction::EmitTypeCheck(TypeCheckKind TCK, SourceLocation Loc,
 
     // The glvalue must be suitably aligned.
     if (AlignVal) {
-      Builder.CreateCapture(Ptr);
       llvm::Value *Align =
           Builder.CreateAnd(Builder.CreateNewPtrToInt(Ptr, IntPtrTy),
                             llvm::ConstantInt::get(IntPtrTy, AlignVal - 1));
@@ -1858,7 +1857,6 @@ void CodeGenFunction::EmitStoreThroughGlobalRegLValue(RValue Src, LValue Dst) {
   llvm::Value *F = CGM.getIntrinsic(llvm::Intrinsic::write_register, Types);
   llvm::Value *Value = Src.getScalarVal();
   if (OrigTy->isPointerTy()) {
-    Builder.CreateCapture(Value);
     Value = Builder.CreateNewPtrToInt(Value, Ty);
   }
   Builder.CreateCall(
@@ -2428,7 +2426,6 @@ llvm::Value *CodeGenFunction::EmitCheckValue(llvm::Value *V) {
     Builder.CreateStore(V, Ptr);
     V = Ptr.getPointer();
   }
-  Builder.CreateCapture(V);
   return Builder.CreateNewPtrToInt(V, TargetTy);
 }
 

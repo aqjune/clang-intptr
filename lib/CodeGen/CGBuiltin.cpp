@@ -71,7 +71,6 @@ static Value *EmitToInt(CodeGenFunction &CGF, llvm::Value *V,
   V = CGF.EmitToMemory(V, T);
 
   if (V->getType()->isPointerTy()) {
-    CGF.Builder.CreateCapture(V);
     return CGF.Builder.CreateNewPtrToInt(V, IntType);
   }
 
@@ -1364,7 +1363,6 @@ RValue CodeGenFunction::EmitBuiltinExpr(const FunctionDecl *FD,
 
     // Cast the pointer to intptr_t.
     Value *Ptr = EmitScalarExpr(E->getArg(0));
-    Builder.CreateCapture(Ptr);
     Value *Result = Builder.CreateNewPtrToInt(Ptr, IntPtrTy, "extend.cast");
 
     // If that's 64 bits, we're done.
@@ -2140,11 +2138,9 @@ RValue CodeGenFunction::EmitBuiltinExpr(const FunctionDecl *FD,
 
     llvm::Value *Exchange = EmitScalarExpr(E->getArg(1));
     RTy = Exchange->getType();
-    Builder.CreateCapture(Exchange);
     Exchange = Builder.CreateNewPtrToInt(Exchange, IntType);
 
     llvm::Value *Val2 = EmitScalarExpr(E->getArg(2));
-    Builder.CreateCapture(Val2);
     llvm::Value *Comparand =
       Builder.CreateNewPtrToInt(Val2, IntType);
 
@@ -4242,7 +4238,6 @@ static Value *EmitSpecialRegisterBuiltin(CodeGenFunction &CGF,
 
   if (ValueType->isPointerTy()) {
     // Have VoidPtrTy ArgValue but want to return an i32/i64.
-    Builder.CreateCapture(ArgValue);
     ArgValue = Builder.CreateNewPtrToInt(ArgValue, RegisterType);
     return Builder.CreateCall(F, { Metadata, ArgValue });
   }
@@ -4507,7 +4502,6 @@ Value *CodeGenFunction::EmitARMBuiltinExpr(unsigned BuiltinID,
     StoreAddr = Builder.CreateBitCast(StoreAddr, StoreTy->getPointerTo());
 
     if (StoreVal->getType()->isPointerTy()) {
-      Builder.CreateCapture(StoreVal);
       StoreVal = Builder.CreateNewPtrToInt(StoreVal, Int32Ty);
     } else {
       llvm::Type *IntTy = llvm::IntegerType::get(
@@ -5338,7 +5332,6 @@ Value *CodeGenFunction::EmitAArch64BuiltinExpr(unsigned BuiltinID,
     StoreAddr = Builder.CreateBitCast(StoreAddr, StoreTy->getPointerTo());
 
     if (StoreVal->getType()->isPointerTy()) {
-      Builder.CreateCapture(StoreVal);
       StoreVal = Builder.CreateNewPtrToInt(StoreVal, Int64Ty);
     } else {
       llvm::Type *IntTy = llvm::IntegerType::get(

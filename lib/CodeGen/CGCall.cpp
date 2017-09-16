@@ -1097,7 +1097,6 @@ static llvm::Value *CoerceIntOrPtrToIntOrPtr(llvm::Value *Val,
     if (isa<llvm::PointerType>(Ty))
       return CGF.Builder.CreateBitCast(Val, Ty, "coerce.val");
 
-    CGF.Builder.CreateCapture(Val);
     // Convert the pointer to an integer so we can play with its width.
     Val = CGF.Builder.CreateNewPtrToInt(Val, CGF.IntPtrTy, "coerce.val.pi");
   }
