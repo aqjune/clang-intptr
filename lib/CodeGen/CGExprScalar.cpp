@@ -998,7 +998,6 @@ Value *ScalarExprEmitter::EmitScalarConversion(Value *Src, QualType SrcType,
   if (isa<llvm::PointerType>(SrcTy)) {
     // Must be an ptr to int cast.
     assert(isa<llvm::IntegerType>(DstTy) && "not ptr->int?");
-    Builder.CreateCapture(Src);
     return Builder.CreateNewPtrToInt(Src, DstTy, "conv");
   }
 
@@ -1727,7 +1726,6 @@ Value *ScalarExprEmitter::VisitCastExpr(CastExpr *CE) {
   case CK_PointerToIntegral: {
     assert(!DestTy->isBooleanType() && "bool should use PointerToBool");
     Value *Src = Visit(E);
-    Builder.CreateCapture(Src);
     return Builder.CreateNewPtrToInt(Src, ConvertType(DestTy));
   }
   case CK_ToVoid: {
@@ -3718,7 +3716,6 @@ static Value *createCastsForTypeOfSameSize(CGBuilderTy &Builder,
   if (SrcTy->isPointerTy() && !DstTy->isPointerTy()) {
     // Case 3b.
     if (!DstTy->isIntegerTy()) {
-      Builder.CreateCapture(Src);
       Src = Builder.CreateNewPtrToInt(Src, DL.getIntPtrType(SrcTy));
     }
     // Cases 3a and 3b.
@@ -3989,7 +3986,6 @@ Value *CodeGenFunction::EmitCheckedInBoundsGEP(Value *Ptr,
 
   // Now that we've computed the total offset, add it to the base pointer (with
   // wrapping semantics).
-  Builder.CreateCapture(GEP->getPointerOperand());
   auto *IntPtr = Builder.CreateNewPtrToInt(GEP->getPointerOperand(), IntPtrTy);
   auto *ComputedGEP = Builder.CreateAdd(IntPtr, TotalOffset);
 

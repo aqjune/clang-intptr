@@ -1312,7 +1312,6 @@ emitReduceScratchpadFunction(CodeGenModule &CGM,
       AddrShouldReduceArg, /*Volatile=*/false, Int32Ty, SourceLocation());
 
   // The absolute ptr address to the base addr of the next element to copy.
-  Bld.CreateCapture(ScratchPadBase);
   llvm::Value *CumulativeElemBasePtr =
       Bld.CreateNewPtrToInt(ScratchPadBase, CGM.SizeTy);
   Address SrcDataAddr(CumulativeElemBasePtr, CGF.getPointerAlign());
@@ -1428,7 +1427,6 @@ static llvm::Value *emitCopyToScratchpad(CodeGenModule &CGM,
                         CGF.SizeTy, /*isSigned=*/true);
 
   // The absolute ptr address to the base addr of the next element to copy.
-  Bld.CreateCapture(ScratchPadBase);
   llvm::Value *CumulativeElemBasePtr =
       Bld.CreateNewPtrToInt(ScratchPadBase, CGM.SizeTy);
   Address DestDataAddr(CumulativeElemBasePtr, CGF.getPointerAlign());

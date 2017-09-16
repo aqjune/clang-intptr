@@ -783,7 +783,6 @@ void CodeGenPGO::valueProfile(CGBuilderTy &Builder, uint32_t ValueKind,
   if (InstrumentValueSites && RegionCounterMap) {
     auto BuilderInsertPoint = Builder.saveIP();
     Builder.SetInsertPoint(ValueSite);
-    Builder.CreateCapture(ValuePtr);
     llvm::Value *Args[5] = {
         llvm::ConstantExpr::getBitCast(FuncNameVar, Builder.getInt8PtrTy()),
         Builder.getInt64(FunctionHash),

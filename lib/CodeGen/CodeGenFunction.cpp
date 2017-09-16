@@ -457,7 +457,6 @@ CodeGenFunction::DecodeAddrUsedInPrologue(llvm::Value *F,
                                           llvm::Value *EncodedAddr) {
   // Reconstruct the address of the global.
   auto *PCRelAsInt = Builder.CreateSExt(EncodedAddr, IntPtrTy);
-  Builder.CreateCapture(F);
   auto *FuncAsInt = Builder.CreateNewPtrToInt(F, IntPtrTy, "func_addr.int");
   auto *GOTAsInt = Builder.CreateAdd(PCRelAsInt, FuncAsInt, "global_addr.int");
   auto *GOTAddr = Builder.CreateNewIntToPtr(GOTAsInt, Int8PtrPtrTy, "global_addr");

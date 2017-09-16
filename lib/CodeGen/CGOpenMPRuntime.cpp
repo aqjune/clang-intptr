@@ -4494,7 +4494,6 @@ void CGOpenMPRuntime::emitTaskCall(CodeGenFunction &CGF, SourceLocation Loc,
       // deps[i].base_addr = &<Dependences[i].second>;
       auto BaseAddrLVal = CGF.EmitLValueForField(
           Base, *std::next(KmpDependInfoRD->field_begin(), BaseAddr));
-      CGF.Builder.CreateCapture(Addr.getPointer());
       CGF.EmitStoreOfScalar(
           CGF.Builder.CreateNewPtrToInt(Addr.getPointer(), CGF.IntPtrTy),
           BaseAddrLVal);
@@ -4851,7 +4850,6 @@ llvm::Value *CGOpenMPRuntime::emitReductionFunction(
       llvm::Value *Ptr = CGF.Builder.CreateLoad(Elem);
       auto *VLA = CGF.getContext().getAsVariableArrayType(PrivTy);
       auto *OVE = cast<OpaqueValueExpr>(VLA->getSizeExpr());
-      CGF.Builder.CreateCapture(Ptr);
       CodeGenFunction::OpaqueValueMapping OpaqueMap(
           CGF, OVE, RValue::get(CGF.Builder.CreateNewPtrToInt(Ptr, CGF.SizeTy)));
       CGF.EmitVariablyModifiedType(PrivTy);

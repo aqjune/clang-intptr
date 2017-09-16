@@ -1560,7 +1560,6 @@ llvm::Value *AtomicInfo::convertRValueToInt(RValue RVal) const {
           CGF.getLLVMContext(),
           LVal.isSimple() ? getValueSizeInBits() : getAtomicSizeInBits());
       if (isa<llvm::PointerType>(Value->getType())) {
-        CGF.Builder.CreateCapture(Value);
         return CGF.Builder.CreateNewPtrToInt(Value, InputIntTy);
       } else if (llvm::BitCastInst::isBitCastable(Value->getType(), InputIntTy))
         return CGF.Builder.CreateBitCast(Value, InputIntTy);
