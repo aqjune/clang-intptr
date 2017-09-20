@@ -419,10 +419,12 @@ llvm::Type *CodeGenTypes::ConvertType(QualType T) {
       ResultType = llvm::Type::getInt1Ty(getLLVMContext());
       break;
 
-    case BuiltinType::Char_S:
     case BuiltinType::Char_U:
-    case BuiltinType::SChar:
     case BuiltinType::UChar:
+      ResultType = llvm::CharType::get(getLLVMContext());
+      break;
+    case BuiltinType::Char_S:
+    case BuiltinType::SChar:
     case BuiltinType::Short:
     case BuiltinType::UShort:
     case BuiltinType::Int:

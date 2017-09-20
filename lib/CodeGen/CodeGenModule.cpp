@@ -2514,6 +2514,7 @@ void CodeGenModule::maybeSetTrivialComdat(const Decl &D,
 /// Pass IsTentative as true if you want to create a tentative definition.
 void CodeGenModule::EmitGlobalVarDefinition(const VarDecl *D,
                                             bool IsTentative) {
+  //llvm::outs() << "EmitGlobalVarDefinition called! D: " << *D << "\n";
   // OpenCL global variables of sampler type are translated to function calls,
   // therefore no need to be translated.
   QualType ASTTy = D->getType();
@@ -2550,6 +2551,7 @@ void CodeGenModule::EmitGlobalVarDefinition(const VarDecl *D,
     initializedGlobalDecl = GlobalDecl(D);
     Init = EmitConstantInit(*InitDecl);
 
+    //llvm::outs() << "Init: " << Init << "\n";
     if (!Init) {
       QualType T = InitExpr->getType();
       if (D->getType()->isReferenceType())

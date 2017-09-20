@@ -861,17 +861,28 @@ Value *ScalarExprEmitter::EmitScalarConversion(Value *Src, QualType SrcType,
     DstTy = CGF.FloatTy;
   }
 
-  if (isa<llvm::IntegerType>(SrcTy)) {
-    bool InputSigned = SrcType->isSignedIntegerOrEnumerationType();
-    if (SrcType->isBooleanType() && TreatBooleanAsSigned) {
-      InputSigned = true;
+  if (isa<llvm::IntegerType>(SrcTy) || isa<llvm::CharType>(SrcTy)) {
+    bool InputSigned = false;
+    if (isa<llvm::IntegerType>(SrcTy)) {
+      InputSigned = SrcType->isSignedIntegerOrEnumerationType();
+      if (SrcType->isBooleanType() && TreatBooleanAsSigned) {
+        InputSigned = true;
+      }
     }
-    if (isa<llvm::IntegerType>(DstTy))
-      Res = Builder.CreateIntCast(Src, DstTy, InputSigned, "conv");
-    else if (InputSigned)
-      Res = Builder.CreateSIToFP(Src, DstTy, "conv");
+    llvm::Type *i8ty = llvm::IntegerType::get(DstTy->getContext(), 8);
+    llvm::Value *MidVal = Src;
+    if (isa<llvm::CharType>(SrcTy) && !isa<llvm::CharType>(DstTy))
+      MidVal = Builder.CreateBitCast(Src, i8ty, "conv.b");
+
+    if (isa<llvm::IntegerType>(DstTy)) {
+      Res = Builder.CreateIntCast(MidVal, DstTy, InputSigned, "conv");
+    } else if (isa<llvm::CharType>(DstTy) && !isa<llvm::CharType>(SrcTy)) {
+      Res = Builder.CreateIntCast(MidVal, i8ty, InputSigned, "conv.i");
+      Res = Builder.CreateBitCast(Res, DstTy, "conv");
+    } else if (InputSigned)
+      Res = Builder.CreateSIToFP(MidVal, DstTy, "conv");
     else
-      Res = Builder.CreateUIToFP(Src, DstTy, "conv");
+      Res = Builder.CreateUIToFP(MidVal, DstTy, "conv");
   } else if (isa<llvm::IntegerType>(DstTy)) {
     assert(SrcTy->isFloatingPointTy() && "Unknown real conversion");
     if (DstType->isSignedIntegerOrEnumerationType())
@@ -1727,8 +1738,9 @@ ScalarExprEmitter::EmitScalarPrePostIncDec(const UnaryOperator *E, LValue LV,
   } else if (type->isIntegerType()) {
     // Note that signed integer inc/dec with width less than int can't
     // overflow because of promotion rules; we're just eliding a few steps here.
-    bool CanOverflow = value->getType()->getIntegerBitWidth() >=
-                       CGF.IntTy->getIntegerBitWidth();
+    bool CanOverflow = !value->getType()->isCharTy() &&
+                       (value->getType()->getIntegerBitWidth() >=
+                        CGF.IntTy->getIntegerBitWidth());
     if (CanOverflow && type->isSignedIntegerOrEnumerationType()) {
       value = EmitIncDecConsiderOverflowBehavior(E, value, isInc);
     } else if (CanOverflow && type->isUnsignedIntegerType() &&
@@ -1736,8 +1748,18 @@ ScalarExprEmitter::EmitScalarPrePostIncDec(const UnaryOperator *E, LValue LV,
       value =
           EmitOverflowCheckedBinOp(createBinOpInfoFromIncDec(E, value, isInc));
     } else {
-      llvm::Value *amt = llvm::ConstantInt::get(value->getType(), amount, true);
+      llvm::LLVMContext &Cxt = value->getType()->getContext();
+      bool isucharty = value->getType()->isCharTy();
+      llvm::Type *i8ty = llvm::IntegerType::get(Cxt, 8);
+      if (isucharty)
+        value = Builder.CreateBitCast(value, i8ty, "toi8");
+
+      llvm::Value *amt = llvm::ConstantInt::get(isucharty ? i8ty : value->getType(),
+                                                amount, true);
       value = Builder.CreateAdd(value, amt, isInc ? "inc" : "dec");
+
+      if (isucharty)
+        value = Builder.CreateBitCast(value, llvm::CharType::get(Cxt), "tochar");
     }
 
   // Next most common: pointer increment.

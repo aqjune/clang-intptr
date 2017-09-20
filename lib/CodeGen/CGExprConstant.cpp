@@ -639,10 +639,12 @@ public:
   }
 
   llvm::Constant *VisitCompoundLiteralExpr(CompoundLiteralExpr *E) {
+    //llvm::outs() << "JYLEE:CompoundLiteralExpr\n";
     return Visit(E->getInitializer());
   }
 
   llvm::Constant *VisitCastExpr(CastExpr* E) {
+    //llvm::outs() << "JYLEE:CASTEXPR\n";
     if (const auto *ECE = dyn_cast<ExplicitCastExpr>(E))
       CGM.EmitExplicitCastExprType(ECE, CGF);
     Expr *subExpr = E->getSubExpr();
@@ -790,6 +792,7 @@ public:
     // initialise any elements that have not been initialised explicitly
     unsigned NumInitableElts = std::min(NumInitElements, NumElements);
 
+    //llvm::outs() << "JYLEE:EmitArrayInitialization.\n";
     // Initialize remaining array elements.
     // FIXME: This doesn't handle member pointers correctly!
     llvm::Constant *fillC;
@@ -967,6 +970,7 @@ public:
   }
 
   llvm::Constant *VisitStringLiteral(StringLiteral *E) {
+    //llvm::outs() << "JYLEE:VisitStringLiteral\n";
     return CGM.GetConstantArrayFromStringLiteral(E);
   }
 
@@ -988,6 +992,7 @@ public:
   }
 
   llvm::Constant *VisitUnaryExtension(const UnaryOperator *E) {
+    //llvm::outs() << "JYLEE:A\n";
     return Visit(E->getSubExpr());
   }
 
@@ -998,6 +1003,7 @@ public:
 
 public:
   ConstantAddress EmitLValue(APValue::LValueBase LVBase) {
+    //llvm::outs() << "JYLEE:EmitLValue\n";
     if (const ValueDecl *Decl = LVBase.dyn_cast<const ValueDecl*>()) {
       if (Decl->hasAttr<WeakRefAttr>())
         return CGM.GetWeakRefReference(Decl);
@@ -1045,6 +1051,7 @@ public:
       return ConstantAddress(GV, Align);
     }
     case Expr::StringLiteralClass:
+      //llvm::outs() << "\tStringLiteralClass";
       return CGM.GetAddrOfConstantStringFromLiteral(cast<StringLiteral>(E));
     case Expr::ObjCEncodeExprClass:
       return CGM.GetAddrOfConstantStringFromObjCEncode(cast<ObjCEncodeExpr>(E));
@@ -1202,6 +1209,7 @@ bool ConstStructBuilder::Build(ConstExprEmitter *Emitter,
 
 llvm::Constant *CodeGenModule::EmitConstantInit(const VarDecl &D,
                                                 CodeGenFunction *CGF) {
+  //llvm::outs() << "EmitConstantInit called.\n";
   // Make a quick check if variable can be default NULL initialized
   // and avoid going through rest of code which may do, for c++11,
   // initialization of memory to all NULLs.
@@ -1233,6 +1241,7 @@ llvm::Constant *CodeGenModule::EmitConstantInit(const VarDecl &D,
   const Expr *E = D.getInit();
   assert(E && "No initializer to emit");
 
+  //llvm::outs() << "EmitConstantInit: calling ConstExprEmitter..\n";
   llvm::Constant* C = ConstExprEmitter(*this, CGF).Visit(const_cast<Expr*>(E));
   if (C && C->getType()->isIntegerTy(1)) {
     llvm::Type *BoolTy = getTypes().ConvertTypeForMem(E->getType());
@@ -1273,6 +1282,7 @@ llvm::Constant *CodeGenModule::getNullPointer(llvm::PointerType *T, QualType QT)
 llvm::Constant *CodeGenModule::EmitConstantValue(const APValue &Value,
                                                  QualType DestType,
                                                  CodeGenFunction *CGF) {
+  //llvm::outs() << "EmitConstantValue called.\n";
   // For an _Atomic-qualified constant, we may need to add tail padding.
   if (auto *AT = DestType->getAs<AtomicType>()) {
     QualType InnerType = AT->getValueType();
@@ -1302,6 +1312,7 @@ llvm::Constant *CodeGenModule::EmitConstantValue(const APValue &Value,
 
     llvm::Constant *C = nullptr;
 
+    //llvm::outs() << "\tLValue.\n";
     if (APValue::LValueBase LVBase = Value.getLValueBase()) {
       // An array can be represented as an lvalue referring to the base.
       if (isa<llvm::ArrayType>(DestTy)) {
@@ -1310,6 +1321,7 @@ llvm::Constant *CodeGenModule::EmitConstantValue(const APValue &Value,
           const_cast<Expr*>(LVBase.get<const Expr*>()));
       }
 
+      //llvm::outs() << "\t\tLValueBase!\n";
       C = ConstExprEmitter(*this, CGF).EmitLValue(LVBase).getPointer();
 
       // Apply offset if necessary.
@@ -1330,6 +1342,7 @@ llvm::Constant *CodeGenModule::EmitConstantValue(const APValue &Value,
     } else {
       C = Offset;
 
+      //llvm::outs() << "\t\tnot LValueBase!\n";
       // Convert to the appropriate type; this could be an lvalue for
       // an integer.
       if (auto PT = dyn_cast<llvm::PointerType>(DestTy)) {
@@ -1350,8 +1363,14 @@ llvm::Constant *CodeGenModule::EmitConstantValue(const APValue &Value,
       return C;
     }
   }
-  case APValue::Int:
-    return llvm::ConstantInt::get(VMContext, Value.getInt());
+  case APValue::Int: {
+    //llvm::outs() << "\tcase APValue::Int!\n";
+    llvm::Type *DestTy = getTypes().ConvertType(DestType);
+    llvm::Constant *Const = llvm::ConstantInt::get(VMContext, Value.getInt());
+    if (DestTy->isCharTy())
+      Const = llvm::ConstantExpr::getBitCast(Const, DestTy);
+    return Const;
+  }
   case APValue::ComplexInt: {
     llvm::Constant *Complex[2];
 
@@ -1429,6 +1448,7 @@ llvm::Constant *CodeGenModule::EmitConstantValue(const APValue &Value,
     unsigned NumElements = Value.getArraySize();
     unsigned NumInitElts = Value.getArrayInitializedElts();
 
+    //llvm::outs() << "\tAPValue::Array!\n";
     // Emit array filler, if there is one.
     llvm::Constant *Filler = nullptr;
     if (Value.hasArrayFiller())
@@ -1486,6 +1506,7 @@ llvm::Constant *
 CodeGenModule::EmitConstantValueForMemory(const APValue &Value,
                                           QualType DestType,
                                           CodeGenFunction *CGF) {
+  //llvm::outs() << "EmitConstantValueForMemory called.\n";
   llvm::Constant *C = EmitConstantValue(Value, DestType, CGF);
   if (C->getType()->isIntegerTy(1)) {
     llvm::Type *BoolTy = getTypes().ConvertTypeForMem(DestType);
