@@ -1859,9 +1859,7 @@ void CodeGenFunction::EmitStoreThroughLValue(RValue Src, LValue Dst,
       llvm::Type *ResultType = IntPtrTy;
       Address dst = EmitPointerWithAlignment(Dst.getBaseIvarExp());
       llvm::Value *RHS = dst.getPointer();
-      Builder.CreateCapture(RHS);
       RHS = Builder.CreateNewPtrToInt(RHS, ResultType, "sub.ptr.rhs.cast");
-      Builder.CreateCapture(LvalueDst.getPointer());
       llvm::Value *LHS =
         Builder.CreateNewPtrToInt(LvalueDst.getPointer(), ResultType,
                                "sub.ptr.lhs.cast");

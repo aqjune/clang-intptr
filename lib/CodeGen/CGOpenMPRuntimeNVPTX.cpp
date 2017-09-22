@@ -903,8 +903,6 @@ void CGOpenMPRuntimeNVPTX::emitGenericParallelCall(
     CGBuilderTy &Bld = CGF.Builder;
 
     // Prepare for parallel region. Indicate the outlined function.
-    if (Fn->getType()->isPointerTy())
-      Bld.CreateCapture(Fn);
     llvm::Value *Args[] = {Bld.CreateBitOrPointerCast(Fn, CGM.Int8PtrTy)};
     CGF.EmitRuntimeCall(
         createNVPTXRuntimeFunction(OMPRTL_NVPTX__kmpc_kernel_prepare_parallel),
