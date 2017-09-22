@@ -2326,8 +2326,10 @@ RValue CodeGenFunction::EmitBuiltinExpr(const FunctionDecl *FD,
       llvm::Constant *SetJmpEx = CGM.CreateRuntimeFunction(
           llvm::FunctionType::get(IntTy, ArgTypes, /*isVarArg=*/false),
           "_setjmpex", ReturnsTwiceAttr, /*Local=*/true);
-      llvm::Value *Buf = Builder.CreateBitOrPointerCast(
-          EmitScalarExpr(E->getArg(0)), Int8PtrTy);
+      llvm::Value *EArg0 = EmitScalarExpr(E->getArg(0));
+      if (EArg0->getType()->isPointerTy())
+        Builder.CreateCapture(EArg0);
+      llvm::Value *Buf = Builder.CreateBitOrPointerCast(EArg0, Int8PtrTy);
       llvm::Value *FrameAddr =
           Builder.CreateCall(CGM.getIntrinsic(Intrinsic::frameaddress),
                              ConstantInt::get(Int32Ty, 0));
@@ -2343,8 +2345,10 @@ RValue CodeGenFunction::EmitBuiltinExpr(const FunctionDecl *FD,
       llvm::AttributeList ReturnsTwiceAttr = llvm::AttributeList::get(
           getLLVMContext(), llvm::AttributeList::FunctionIndex,
           llvm::Attribute::ReturnsTwice);
-      llvm::Value *Buf = Builder.CreateBitOrPointerCast(
-          EmitScalarExpr(E->getArg(0)), Int8PtrTy);
+      llvm::Value *EArg0 = EmitScalarExpr(E->getArg(0));
+      if (EArg0->getType()->isPointerTy())
+        Builder.CreateCapture(EArg0);
+      llvm::Value *Buf = Builder.CreateBitOrPointerCast(EArg0, Int8PtrTy);
       llvm::CallSite CS;
       if (getTarget().getTriple().getArch() == llvm::Triple::x86) {
         llvm::Type *ArgTypes[] = {Int8PtrTy, IntTy};
@@ -2577,6 +2581,8 @@ RValue CodeGenFunction::EmitBuiltinExpr(const FunctionDecl *FD,
       CGM.getContext().getTargetAddressSpace(
         E->getType()->getPointeeType().getAddressSpace()));
     auto FTy = llvm::FunctionType::get(NewRetT, {NewArgT}, false);
+    if (Arg0->getType()->isPointerTy())
+      Builder.CreateCapture(Arg0);
     llvm::Value *NewArg;
     if (Arg0->getType()->getPointerAddressSpace() !=
         NewArgT->getPointerAddressSpace())
@@ -2586,8 +2592,10 @@ RValue CodeGenFunction::EmitBuiltinExpr(const FunctionDecl *FD,
     auto NewName = std::string("__") + E->getDirectCallee()->getName().str();
     auto NewCall =
         Builder.CreateCall(CGM.CreateRuntimeFunction(FTy, NewName), {NewArg});
-    return RValue::get(Builder.CreateBitOrPointerCast(NewCall,
-      ConvertType(E->getType())));
+    auto ConvType = ConvertType(E->getType());
+    if (NewCall->getType()->isPointerTy() && ConvType->isIntegerTy())
+      Builder.CreateCapture(NewCall);
+    return RValue::get(Builder.CreateBitOrPointerCast(NewCall, ConvType));
   }
 
   // OpenCL v2.0, s6.13.17 - Enqueue kernel function.
