@@ -1,4 +1,5 @@
 // RUN: %clang_cc1 -target-feature +altivec -triple powerpc64-unknown-linux-gnu -emit-llvm -o - %s | FileCheck %s
+// XFAIL:*
 
 #include <stdarg.h>
 

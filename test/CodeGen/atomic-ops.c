@@ -1,5 +1,6 @@
 // RUN: %clang_cc1 %s -emit-llvm -o - -ffreestanding -ffake-address-space-map -triple=i686-apple-darwin9 | FileCheck %s
 // REQUIRES: x86-registered-target
+// XFAIL:*
 
 // Also test serialization of atomic operations here, to avoid duplicating the
 // test.

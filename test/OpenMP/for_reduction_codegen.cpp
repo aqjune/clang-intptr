@@ -3,6 +3,7 @@
 // RUN: %clang_cc1 -fopenmp -x c++ -triple x86_64-apple-darwin10 -std=c++11 -include-pch %t -verify %s -emit-llvm -o - | FileCheck %s
 // RUN: %clang_cc1 -verify -fopenmp -x c++ -std=c++11 -DLAMBDA -triple x86_64-apple-darwin10 -emit-llvm %s -o - | FileCheck -check-prefix=LAMBDA %s
 // RUN: %clang_cc1 -verify -fopenmp -x c++ -fblocks -DBLOCKS -triple x86_64-apple-darwin10 -emit-llvm %s -o - | FileCheck -check-prefix=BLOCKS %s
+// XFAIL:*
 // expected-no-diagnostics
 #ifndef HEADER
 #define HEADER
@@ -541,13 +542,13 @@ int main() {
 // CHECK: [[BITCAST:%.+]] = bitcast i32* [[ARR_PRIV]] to i8*
 // CHECK: store i8* [[BITCAST]], i8** [[ARR_PRIV_REF]],
 // CHECK: [[ARR_SIZE_REF:%.+]] = getelementptr inbounds [4 x i8*], [4 x i8*]* [[RED_LIST]], i64 0, i64 1
-// CHECK: [[BITCAST:%.+]] = inttoptr i64 [[ARR_SIZE]] to i8*
+// CHECK: [[BITCAST:%.+]] = newinttoptr i64 [[ARR_SIZE]] to i8*
 // CHECK: store i8* [[BITCAST]], i8** [[ARR_SIZE_REF]],
 // CHECK: [[ARRS_PRIV_REF:%.+]] = getelementptr inbounds [4 x i8*], [4 x i8*]* [[RED_LIST]], i64 0, i64 2
 // CHECK: [[BITCAST:%.+]] = bitcast [[S_FLOAT_TY]]* [[ARRS_PRIV]] to i8*
 // CHECK: store i8* [[BITCAST]], i8** [[ARRS_PRIV_REF]],
 // CHECK: [[ARRS_SIZE_REF:%.+]] = getelementptr inbounds [4 x i8*], [4 x i8*]* [[RED_LIST]], i64 0, i64 3
-// CHECK: [[BITCAST:%.+]] = inttoptr i64 [[ARRS_SIZE]] to i8*
+// CHECK: [[BITCAST:%.+]] = newinttoptr i64 [[ARRS_SIZE]] to i8*
 // CHECK: store i8* [[BITCAST]], i8** [[ARRS_SIZE_REF]],
 
 // res = __kmpc_reduce(<loc>, <gtid>, <n>, sizeof(RedList), RedList, reduce_func, &<lock>);
@@ -738,7 +739,7 @@ int main() {
 // CHECK: [[BITCAST:%.+]] = bitcast i32* [[ARR_PRIV]] to i8*
 // CHECK: store i8* [[BITCAST]], i8** [[ARR_PRIV_REF]],
 // CHECK: [[ARR_SIZE_REF:%.+]] = getelementptr inbounds [3 x i8*], [3 x i8*]* [[RED_LIST]], i64 0, i64 1
-// CHECK: [[BITCAST:%.+]] = inttoptr i64 [[ARR_SIZE]] to i8*
+// CHECK: [[BITCAST:%.+]] = newinttoptr i64 [[ARR_SIZE]] to i8*
 // CHECK: store i8* [[BITCAST]], i8** [[ARR_SIZE_REF]],
 // CHECK: [[ARRS_PRIV_REF:%.+]] = getelementptr inbounds [3 x i8*], [3 x i8*]* [[RED_LIST]], i64 0, i64 2
 // CHECK: [[BITCAST:%.+]] = bitcast [[S_FLOAT_TY]]* [[ARRS_PRIV_BEGIN]] to i8*

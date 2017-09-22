@@ -70,10 +70,10 @@ long long test_i64(char *fmt, ...) {
 //
 // i64 is 8-byte aligned, while this is within O32's stack alignment there's no
 // guarantee that the offset is still 8-byte aligned after earlier reads.
-// O32:   [[TMP1:%.+]] = ptrtoint i8* [[AP_CUR]] to i32
+// O32:   [[TMP1:%.+]] = newptrtoint i8* [[AP_CUR]] to i32
 // O32:   [[TMP2:%.+]] = add i32 [[TMP1]], 7
 // O32:   [[TMP3:%.+]] = and i32 [[TMP2]], -8
-// O32:   [[AP_CUR:%.+]] = inttoptr i32 [[TMP3]] to i8*
+// O32:   [[AP_CUR:%.+]] = newinttoptr i32 [[TMP3]] to i8*
 //
 // ALL:   [[AP_NEXT:%.+]] = getelementptr inbounds i8, i8* [[AP_CUR]], [[$INTPTR_T]] 8
 // ALL:   store i8* [[AP_NEXT]], i8** %va, align [[$PTRALIGN]]
@@ -113,7 +113,7 @@ char *test_ptr(char *fmt, ...) {
 // N32:   [[TMP1:%.+]] = bitcast i8* [[AP_CUR]] to i64*
 // N32:   [[TMP2:%.+]] = load i64, i64* [[TMP1]], align 8
 // N32:   [[TMP3:%.+]] = trunc i64 [[TMP2]] to i32
-// N32:   [[PTR:%.+]] = inttoptr i32 [[TMP3]] to i8*
+// N32:   [[PTR:%.+]] = newinttoptr i32 [[TMP3]] to i8*
 // N32:   store i8* [[PTR]], i8** [[AP_CAST]], align 4
 //
 // ALL:   [[ARG:%.+]] = load i8*, i8** [[AP_CAST]], align [[$PTRALIGN]]
@@ -143,15 +143,15 @@ int test_v4i32(char *fmt, ...) {
 //
 // Vectors are 16-byte aligned, however the O32 ABI has a maximum alignment of
 // 8-bytes since the base of the stack is 8-byte aligned.
-// O32:   [[TMP1:%.+]] = ptrtoint i8* [[AP_CUR]] to i32
+// O32:   [[TMP1:%.+]] = newptrtoint i8* [[AP_CUR]] to i32
 // O32:   [[TMP2:%.+]] = add i32 [[TMP1]], 7
 // O32:   [[TMP3:%.+]] = and i32 [[TMP2]], -8
-// O32:   [[AP_CUR:%.+]] = inttoptr i32 [[TMP3]] to i8*
+// O32:   [[AP_CUR:%.+]] = newinttoptr i32 [[TMP3]] to i8*
 //
-// NEW:   [[TMP1:%.+]] = ptrtoint i8* [[AP_CUR]] to [[$INTPTR_T]]
+// NEW:   [[TMP1:%.+]] = newptrtoint i8* [[AP_CUR]] to [[$INTPTR_T]]
 // NEW:   [[TMP2:%.+]] = add [[$INTPTR_T]] [[TMP1]], 15
 // NEW:   [[TMP3:%.+]] = and [[$INTPTR_T]] [[TMP2]], -16
-// NEW:   [[AP_CUR:%.+]] = inttoptr [[$INTPTR_T]] [[TMP3]] to i8*
+// NEW:   [[AP_CUR:%.+]] = newinttoptr [[$INTPTR_T]] [[TMP3]] to i8*
 //
 // ALL:   [[AP_NEXT:%.+]] = getelementptr inbounds i8, i8* [[AP_CUR]], [[$INTPTR_T]] 16
 // ALL:   store i8* [[AP_NEXT]], i8** %va, align [[$PTRALIGN]]

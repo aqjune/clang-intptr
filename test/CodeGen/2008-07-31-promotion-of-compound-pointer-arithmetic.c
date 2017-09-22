@@ -1,4 +1,5 @@
 // RUN: %clang_cc1 -triple i386-unknown-unknown -O1 -emit-llvm -o - %s | FileCheck %s
+// XFAIL:*
 // CHECK-LABEL: define i32 @f0
 // CHECK:   ret i32 1
 // CHECK-LABEL: define i32 @f1

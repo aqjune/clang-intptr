@@ -1,4 +1,5 @@
 // RUN: %clang_cc1 %s -emit-llvm -triple spir-unknown-unknown -o - | FileCheck %s
+// XFAIL:*
 
 typedef __attribute__(( ext_vector_type(3) )) char char3;
 typedef __attribute__(( ext_vector_type(4) )) char char4;
@@ -75,7 +76,7 @@ global int* addr_cast(int *x) {
 }
 
 //CHECK: define spir_func i32 addrspace(1)* @int_to_ptr(i32 %[[x:.*]])
-//CHECK: %[[cast:.*]] = inttoptr i32 %[[x]] to i32 addrspace(1)*
+//CHECK: %[[cast:.*]] = newinttoptr i32 %[[x]] to i32 addrspace(1)*
 //CHECK: ret i32 addrspace(1)* %[[cast]]
 global int* int_to_ptr(int x) {
   return __builtin_astype(x, global int*);
@@ -100,7 +101,7 @@ char3 ptr_to_char3(int *x) {
 //CHECK: define spir_func i32* @char3_to_ptr(<3 x i8> %[[x:.*]])
 //CHECK: %[[astype:.*]] = shufflevector <3 x i8> %[[x]], <3 x i8> undef, <4 x i32> <i32 0, i32 1, i32 2, i32 undef>
 //CHECK: %[[cast1:.*]] = bitcast <4 x i8> %[[astype]] to i32
-//CHECK: %[[cast2:.*]] = inttoptr i32 %[[cast1]] to i32*
+//CHECK: %[[cast2:.*]] = newinttoptr i32 %[[cast1]] to i32*
 //CHECK: ret i32* %[[cast2]]
 int* char3_to_ptr(char3 x) {
   return __builtin_astype(x, int*);

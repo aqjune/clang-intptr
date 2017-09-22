@@ -78,7 +78,7 @@ void wsr64(unsigned long v) {
 }
 
 void wsrp(void *v) {
-  // CHECK: [[V0:[%A-Za-z0-9.]+]] = ptrtoint i8* %v to i64
+  // CHECK: [[V0:[%A-Za-z0-9.]+]] = newptrtoint i8* %v to i64
   // CHECK-NEXT: call void @llvm.write_register.i64(metadata ![[M0:[0-9]]], i64 [[V0]])
   __builtin_arm_wsrp("1:2:3:4:5", v);
 }

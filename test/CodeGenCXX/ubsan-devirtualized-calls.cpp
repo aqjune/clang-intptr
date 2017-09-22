@@ -36,7 +36,7 @@ struct Derived4 final : Base1 {
 void t1() {
   Derived1 d1;
   static_cast<Base1 *>(&d1)->f1(); //< Devirt Base1::f1 to Derived1::f1.
-  // CHECK: %[[D1:[0-9]+]] = ptrtoint %struct.Derived1* %d1 to i{{[0-9]+}}, !nosanitize
+  // CHECK: %[[D1:[0-9]+]] = newptrtoint %struct.Derived1* %d1 to i{{[0-9]+}}, !nosanitize
   // CHECK-NEXT: call void @__ubsan_handle_dynamic_type_cache{{[_a-z]*}}({{.*}} [[UBSAN_TI_DERIVED1_1]] {{.*}}, i{{[0-9]+}} %[[D1]]
 }
 
@@ -44,7 +44,7 @@ void t1() {
 void t2() {
   Derived2 d2;
   static_cast<Base1 *>(&d2)->f1(); //< Devirt Base1::f1 to Derived2::f1.
-  // CHECK: %[[D2_1:[0-9]+]] = ptrtoint %struct.Derived2* %d2 to i{{[0-9]+}}, !nosanitize
+  // CHECK: %[[D2_1:[0-9]+]] = newptrtoint %struct.Derived2* %d2 to i{{[0-9]+}}, !nosanitize
   // CHECK-NEXT: call void @__ubsan_handle_dynamic_type_cache{{[_a-z]*}}({{.*}} [[UBSAN_TI_DERIVED2_1]] {{.*}}, i{{[0-9]+}} %[[D2_1]]
 }
 
@@ -52,7 +52,7 @@ void t2() {
 void t3() {
   Derived2 d2;
   static_cast<Base2 *>(&d2)->f1(); //< Devirt Base2::f1 to Derived2::f1.
-  // CHECK: %[[D2_2:[0-9]+]] = ptrtoint %struct.Derived2* %d2 to i{{[0-9]+}}, !nosanitize
+  // CHECK: %[[D2_2:[0-9]+]] = newptrtoint %struct.Derived2* %d2 to i{{[0-9]+}}, !nosanitize
   // CHECK-NEXT: call void @__ubsan_handle_dynamic_type_cache{{[_a-z]*}}({{.*}} [[UBSAN_TI_DERIVED2_2]] {{.*}}, i{{[0-9]+}} %[[D2_2]]
 }
 
@@ -60,7 +60,7 @@ void t3() {
 void t4() {
   Base1 p;
   Derived3 *badp = static_cast<Derived3 *>(&p); //< Check that &p isa Derived3.
-  // CHECK: %[[P1:[0-9]+]] = ptrtoint %struct.Derived3* {{%[0-9]+}} to i{{[0-9]+}}, !nosanitize
+  // CHECK: %[[P1:[0-9]+]] = newptrtoint %struct.Derived3* {{%[0-9]+}} to i{{[0-9]+}}, !nosanitize
   // CHECK-NEXT: call void @__ubsan_handle_dynamic_type_cache{{[_a-z]*}}({{.*}} [[UBSAN_TI_DERIVED3]] {{.*}}, i{{[0-9]+}} %[[P1]]
 
   static_cast<Base1 *>(badp)->f1(); //< No devirt, test 'badp isa Base1'.
@@ -69,7 +69,7 @@ void t4() {
   // is a (bitcast (load ...)).
   // CHECK: call void @__ubsan_handle_type_mismatch
   //
-  // CHECK: %[[BADP1:[0-9]+]] = ptrtoint %struct.Base1* {{%[0-9]+}} to i{{[0-9]+}}, !nosanitize
+  // CHECK: %[[BADP1:[0-9]+]] = newptrtoint %struct.Base1* {{%[0-9]+}} to i{{[0-9]+}}, !nosanitize
   // CHECK-NEXT: call void @__ubsan_handle_dynamic_type_cache{{[_a-z]*}}({{.*}} [[UBSAN_TI_BASE1]] {{.*}}, i{{[0-9]+}} %[[BADP1]]
 }
 
@@ -77,12 +77,12 @@ void t4() {
 void t5() {
   Base1 p;
   Derived4 *badp = static_cast<Derived4 *>(&p); //< Check that &p isa Derived4.
-  // CHECK: %[[P1:[0-9]+]] = ptrtoint %struct.Derived4* {{%[0-9]+}} to i{{[0-9]+}}, !nosanitize
+  // CHECK: %[[P1:[0-9]+]] = newptrtoint %struct.Derived4* {{%[0-9]+}} to i{{[0-9]+}}, !nosanitize
   // CHECK-NEXT: call void @__ubsan_handle_dynamic_type_cache{{[_a-z]*}}({{.*}} [[UBSAN_TI_DERIVED4_1]] {{.*}}, i{{[0-9]+}} %[[P1]]
 
   static_cast<Base1 *>(badp)->f1(); //< Devirt Base1::f1 to Derived4::f1.
   // CHECK: call void @__ubsan_handle_type_mismatch
   //
-  // CHECK: %[[BADP1:[0-9]+]] = ptrtoint %struct.Derived4* {{%[0-9]+}} to i{{[0-9]+}}, !nosanitize
+  // CHECK: %[[BADP1:[0-9]+]] = newptrtoint %struct.Derived4* {{%[0-9]+}} to i{{[0-9]+}}, !nosanitize
   // CHECK-NEXT: call void @__ubsan_handle_dynamic_type_cache{{[_a-z]*}}({{.*}} [[UBSAN_TI_DERIVED4_2]] {{.*}}, i{{[0-9]+}} %[[BADP1]]
 }

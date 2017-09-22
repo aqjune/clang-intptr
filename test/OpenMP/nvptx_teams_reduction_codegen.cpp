@@ -241,14 +241,14 @@ int bar(int n){
   // CHECK-64: [[NUM_TEAMS32:%.+]] = load i32, i32* {{.+}}, align
   // CHECK-64: [[NUM_TEAMS:%.+]] = sext i32 [[NUM_TEAMS32]] to i64
   // CHECK-32: [[NUM_TEAMS:%.+]] = load i32, i32* {{.+}}, align
-  // CHECK: [[SCRATCHPAD:%.+]] = ptrtoint i8* [[SCRATCHPAD_PTR]] to i[[SZ]]
+  // CHECK: [[SCRATCHPAD:%.+]] = newptrtoint i8* [[SCRATCHPAD_PTR]] to i[[SZ]]
   //
   // CHECK: [[ELT_REF:%.+]] = getelementptr inbounds [[RLT]], [[RLT]]* [[RED_LIST]], i[[SZ]] 0, i[[SZ]] 0
   // CHECK: [[ELT_VOID:%.+]] = load i8*, i8** [[ELT_REF]],
   //
   // CHECK: [[P:%.+]] = mul i[[SZ]] 8, [[TEAM]]
   // CHECK: [[SCRATCHPAD_ELT_PTR64:%.+]] = add i[[SZ]] [[SCRATCHPAD]], [[P]]
-  // CHECK: [[SCRATCHPAD_ELT_PTR_VOID:%.+]] = inttoptr i[[SZ]] [[SCRATCHPAD_ELT_PTR64]] to i8*
+  // CHECK: [[SCRATCHPAD_ELT_PTR_VOID:%.+]] = newinttoptr i[[SZ]] [[SCRATCHPAD_ELT_PTR64]] to i8*
   // CHECK: [[SCRATCHPAD_ELT_PTR:%.+]] = bitcast i8* [[SCRATCHPAD_ELT_PTR_VOID]] to double*
   // CHECK: [[ELT:%.+]] = bitcast i8* [[ELT_VOID]] to double*
   // CHECK: [[ELT_VAL:%.+]] = load double, double* [[ELT]], align
@@ -270,11 +270,11 @@ int bar(int n){
   // CHECK-64: [[NUM_TEAMS:%.+]] = sext i32 [[NUM_TEAMS32]] to i64
   // CHECK-32: [[NUM_TEAMS:%.+]] = load i32, i32* {{.+}}, align
   // CHECK: [[SHOULD_REDUCE:%.+]] = load i32, i32* {{.+}}, align
-  // CHECK: [[SCRATCHPAD:%.+]] = ptrtoint i8* [[SCRATCHPAD_PTR]] to i[[SZ]]
+  // CHECK: [[SCRATCHPAD:%.+]] = newptrtoint i8* [[SCRATCHPAD_PTR]] to i[[SZ]]
   //
   // CHECK: [[P:%.+]] = mul i[[SZ]] 8, [[TEAM]]
   // CHECK: [[SCRATCHPAD_ELT_PTR64:%.+]] = add i[[SZ]] [[SCRATCHPAD]], [[P]]
-  // CHECK: [[SCRATCHPAD_ELT_PTR_VOID:%.+]] = inttoptr i[[SZ]] [[SCRATCHPAD_ELT_PTR64]] to i8*
+  // CHECK: [[SCRATCHPAD_ELT_PTR_VOID:%.+]] = newinttoptr i[[SZ]] [[SCRATCHPAD_ELT_PTR64]] to i8*
 
   // CHECK: [[REMOTE_ELT_REF:%.+]] = getelementptr inbounds [[RLT]], [[RLT]]* [[REMOTE_RED_LIST]], i[[SZ]] 0, i[[SZ]] 0
   // CHECK: [[SCRATCHPAD_ELT_PTR:%.+]] = bitcast i8* [[SCRATCHPAD_ELT_PTR_VOID]] to double*
@@ -593,14 +593,14 @@ int bar(int n){
   // CHECK-64: [[NUM_TEAMS32:%.+]] = load i32, i32* {{.+}}, align
   // CHECK-64: [[NUM_TEAMS:%.+]] = sext i32 [[NUM_TEAMS32]] to i64
   // CHECK-32: [[NUM_TEAMS:%.+]] = load i32, i32* {{.+}}, align
-  // CHECK: [[SCRATCHPAD:%.+]] = ptrtoint i8* [[SCRATCHPAD_PTR]] to i[[SZ]]
+  // CHECK: [[SCRATCHPAD:%.+]] = newptrtoint i8* [[SCRATCHPAD_PTR]] to i[[SZ]]
   //
   // CHECK: [[ELT_REF:%.+]] = getelementptr inbounds [[RLT]], [[RLT]]* [[RED_LIST]], i[[SZ]] 0, i[[SZ]] 0
   // CHECK: [[ELT_VOID:%.+]] = load i8*, i8** [[ELT_REF]],
   //
   // CHECK: [[P:%.+]] = mul i[[SZ]] 1, [[TEAM]]
   // CHECK: [[SCRATCHPAD_ELT_PTR64:%.+]] = add i[[SZ]] [[SCRATCHPAD]], [[P]]
-  // CHECK: [[SCRATCHPAD_ELT_PTR:%.+]] = inttoptr i[[SZ]] [[SCRATCHPAD_ELT_PTR64]] to i8*
+  // CHECK: [[SCRATCHPAD_ELT_PTR:%.+]] = newinttoptr i[[SZ]] [[SCRATCHPAD_ELT_PTR64]] to i8*
   // CHECK: [[ELT_VAL:%.+]] = load i8, i8* [[ELT_VOID]], align
   // CHECK: store i8 [[ELT_VAL]], i8* [[SCRATCHPAD_ELT_PTR]], align
   //
@@ -616,7 +616,7 @@ int bar(int n){
   //
   // CHECK: [[P:%.+]] = mul i[[SZ]] 4, [[TEAM]]
   // CHECK: [[SCRATCHPAD_ELT_PTR64:%.+]] = add i[[SZ]] [[SCRATCHPAD_NEXT]], [[P]]
-  // CHECK: [[SCRATCHPAD_ELT_PTR_VOID:%.+]] = inttoptr i[[SZ]] [[SCRATCHPAD_ELT_PTR64]] to i8*
+  // CHECK: [[SCRATCHPAD_ELT_PTR_VOID:%.+]] = newinttoptr i[[SZ]] [[SCRATCHPAD_ELT_PTR64]] to i8*
   // CHECK: [[SCRATCHPAD_ELT_PTR:%.+]] = bitcast i8* [[SCRATCHPAD_ELT_PTR_VOID]] to float*
   // CHECK: [[ELT:%.+]] = bitcast i8* [[ELT_VOID]] to float*
   // CHECK: [[ELT_VAL:%.+]] = load float, float* [[ELT]], align
@@ -639,11 +639,11 @@ int bar(int n){
   // CHECK-64: [[NUM_TEAMS:%.+]] = sext i32 [[NUM_TEAMS32]] to i64
   // CHECK-32: [[NUM_TEAMS:%.+]] = load i32, i32* {{.+}}, align
   // CHECK: [[SHOULD_REDUCE:%.+]] = load i32, i32* {{.+}}, align
-  // CHECK: [[SCRATCHPAD:%.+]] = ptrtoint i8* [[SCRATCHPAD_PTR]] to i[[SZ]]
+  // CHECK: [[SCRATCHPAD:%.+]] = newptrtoint i8* [[SCRATCHPAD_PTR]] to i[[SZ]]
   //
   // CHECK: [[P:%.+]] = mul i[[SZ]] 1, [[TEAM]]
   // CHECK: [[SCRATCHPAD_ELT_PTR64:%.+]] = add i[[SZ]] [[SCRATCHPAD]], [[P]]
-  // CHECK: [[SCRATCHPAD_ELT_PTR_VOID:%.+]] = inttoptr i[[SZ]] [[SCRATCHPAD_ELT_PTR64]] to i8*
+  // CHECK: [[SCRATCHPAD_ELT_PTR_VOID:%.+]] = newinttoptr i[[SZ]] [[SCRATCHPAD_ELT_PTR64]] to i8*
 
   // CHECK: [[REMOTE_ELT_REF:%.+]] = getelementptr inbounds [[RLT]], [[RLT]]* [[REMOTE_RED_LIST]], i[[SZ]] 0, i[[SZ]] 0
   // CHECK: [[REMOTE_ELT_VAL:%.+]] = load i8, i8* [[SCRATCHPAD_ELT_PTR_VOID]], align
@@ -659,7 +659,7 @@ int bar(int n){
   //
   // CHECK: [[P:%.+]] = mul i[[SZ]] 4, [[TEAM]]
   // CHECK: [[SCRATCHPAD_ELT_PTR64:%.+]] = add i[[SZ]] [[SCRATCHPAD_NEXT]], [[P]]
-  // CHECK: [[SCRATCHPAD_ELT_PTR_VOID:%.+]] = inttoptr i[[SZ]] [[SCRATCHPAD_ELT_PTR64]] to i8*
+  // CHECK: [[SCRATCHPAD_ELT_PTR_VOID:%.+]] = newinttoptr i[[SZ]] [[SCRATCHPAD_ELT_PTR64]] to i8*
 
   // CHECK: [[REMOTE_ELT_REF:%.+]] = getelementptr inbounds [[RLT]], [[RLT]]* [[REMOTE_RED_LIST]], i[[SZ]] 0, i[[SZ]] 1
   // CHECK: [[SCRATCHPAD_ELT_PTR:%.+]] = bitcast i8* [[SCRATCHPAD_ELT_PTR_VOID]] to float*
@@ -1027,14 +1027,14 @@ int bar(int n){
   // CHECK-64: [[NUM_TEAMS32:%.+]] = load i32, i32* {{.+}}, align
   // CHECK-64: [[NUM_TEAMS:%.+]] = sext i32 [[NUM_TEAMS32]] to i64
   // CHECK-32: [[NUM_TEAMS:%.+]] = load i32, i32* {{.+}}, align
-  // CHECK: [[SCRATCHPAD:%.+]] = ptrtoint i8* [[SCRATCHPAD_PTR]] to i[[SZ]]
+  // CHECK: [[SCRATCHPAD:%.+]] = newptrtoint i8* [[SCRATCHPAD_PTR]] to i[[SZ]]
   //
   // CHECK: [[ELT_REF:%.+]] = getelementptr inbounds [[RLT]], [[RLT]]* [[RED_LIST]], i[[SZ]] 0, i[[SZ]] 0
   // CHECK: [[ELT_VOID:%.+]] = load i8*, i8** [[ELT_REF]],
   //
   // CHECK: [[P:%.+]] = mul i[[SZ]] 4, [[TEAM]]
   // CHECK: [[SCRATCHPAD_ELT_PTR64:%.+]] = add i[[SZ]] [[SCRATCHPAD]], [[P]]
-  // CHECK: [[SCRATCHPAD_ELT_PTR_VOID:%.+]] = inttoptr i[[SZ]] [[SCRATCHPAD_ELT_PTR64]] to i8*
+  // CHECK: [[SCRATCHPAD_ELT_PTR_VOID:%.+]] = newinttoptr i[[SZ]] [[SCRATCHPAD_ELT_PTR64]] to i8*
   // CHECK: [[SCRATCHPAD_ELT_PTR:%.+]] = bitcast i8* [[SCRATCHPAD_ELT_PTR_VOID]] to i32*
   // CHECK: [[ELT:%.+]] = bitcast i8* [[ELT_VOID]] to i32*
   // CHECK: [[ELT_VAL:%.+]] = load i32, i32* [[ELT]], align
@@ -1052,7 +1052,7 @@ int bar(int n){
   //
   // CHECK: [[P:%.+]] = mul i[[SZ]] 2, [[TEAM]]
   // CHECK: [[SCRATCHPAD_ELT_PTR64:%.+]] = add i[[SZ]] [[SCRATCHPAD_NEXT]], [[P]]
-  // CHECK: [[SCRATCHPAD_ELT_PTR_VOID:%.+]] = inttoptr i[[SZ]] [[SCRATCHPAD_ELT_PTR64]] to i8*
+  // CHECK: [[SCRATCHPAD_ELT_PTR_VOID:%.+]] = newinttoptr i[[SZ]] [[SCRATCHPAD_ELT_PTR64]] to i8*
   // CHECK: [[SCRATCHPAD_ELT_PTR:%.+]] = bitcast i8* [[SCRATCHPAD_ELT_PTR_VOID]] to i16*
   // CHECK: [[ELT:%.+]] = bitcast i8* [[ELT_VOID]] to i16*
   // CHECK: [[ELT_VAL:%.+]] = load i16, i16* [[ELT]], align
@@ -1075,11 +1075,11 @@ int bar(int n){
   // CHECK-64: [[NUM_TEAMS:%.+]] = sext i32 [[NUM_TEAMS32]] to i64
   // CHECK-32: [[NUM_TEAMS:%.+]] = load i32, i32* {{.+}}, align
   // CHECK: [[SHOULD_REDUCE:%.+]] = load i32, i32* {{.+}}, align
-  // CHECK: [[SCRATCHPAD:%.+]] = ptrtoint i8* [[SCRATCHPAD_PTR]] to i[[SZ]]
+  // CHECK: [[SCRATCHPAD:%.+]] = newptrtoint i8* [[SCRATCHPAD_PTR]] to i[[SZ]]
   //
   // CHECK: [[P:%.+]] = mul i[[SZ]] 4, [[TEAM]]
   // CHECK: [[SCRATCHPAD_ELT_PTR64:%.+]] = add i[[SZ]] [[SCRATCHPAD]], [[P]]
-  // CHECK: [[SCRATCHPAD_ELT_PTR_VOID:%.+]] = inttoptr i[[SZ]] [[SCRATCHPAD_ELT_PTR64]] to i8*
+  // CHECK: [[SCRATCHPAD_ELT_PTR_VOID:%.+]] = newinttoptr i[[SZ]] [[SCRATCHPAD_ELT_PTR64]] to i8*
 
   // CHECK: [[REMOTE_ELT_REF:%.+]] = getelementptr inbounds [[RLT]], [[RLT]]* [[REMOTE_RED_LIST]], i[[SZ]] 0, i[[SZ]] 0
   // CHECK: [[SCRATCHPAD_ELT_PTR:%.+]] = bitcast i8* [[SCRATCHPAD_ELT_PTR_VOID]] to i32*
@@ -1097,7 +1097,7 @@ int bar(int n){
   //
   // CHECK: [[P:%.+]] = mul i[[SZ]] 2, [[TEAM]]
   // CHECK: [[SCRATCHPAD_ELT_PTR64:%.+]] = add i[[SZ]] [[SCRATCHPAD_NEXT]], [[P]]
-  // CHECK: [[SCRATCHPAD_ELT_PTR_VOID:%.+]] = inttoptr i[[SZ]] [[SCRATCHPAD_ELT_PTR64]] to i8*
+  // CHECK: [[SCRATCHPAD_ELT_PTR_VOID:%.+]] = newinttoptr i[[SZ]] [[SCRATCHPAD_ELT_PTR64]] to i8*
 
   // CHECK: [[REMOTE_ELT_REF:%.+]] = getelementptr inbounds [[RLT]], [[RLT]]* [[REMOTE_RED_LIST]], i[[SZ]] 0, i[[SZ]] 1
   // CHECK: [[SCRATCHPAD_ELT_PTR:%.+]] = bitcast i8* [[SCRATCHPAD_ELT_PTR_VOID]] to i16*

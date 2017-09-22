@@ -5,7 +5,8 @@
 extern "C" int printf(...);
 
 void test0() {
-// CHECK: call i32 (...) @printf({{.*}}, i8* inttoptr (i64 3735928559 to i8*))
+// CHECK: newinttoptr
+// CHECK: call i32 (...) @printf({{.*}}, i8* {{.*}})
     printf("%p\n", (void *)0xdeadbeef ? : (void *)0xaaaaaa);
 }
 

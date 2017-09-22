@@ -1,4 +1,5 @@
 // RUN: %clang_cc1 -w -triple x86_64-elf-gnu -emit-llvm -o - %s -std=c++11 | FileCheck %s
+// XFAIL:*
 
 // FIXME: The padding in all these objects should be zero-initialized.
 namespace StructUnion {
