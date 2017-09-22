@@ -1859,18 +1859,13 @@ void CodeGenFunction::EmitStoreThroughLValue(RValue Src, LValue Dst,
       llvm::Type *ResultType = IntPtrTy;
       Address dst = EmitPointerWithAlignment(Dst.getBaseIvarExp());
       llvm::Value *RHS = dst.getPointer();
-      //RHS = Builder.CreatePtrToInt(RHS, ResultType, "sub.ptr.rhs.cast");
-      //llvm::Value *LHS =
-      //  Builder.CreatePtrToInt(LvalueDst.getPointer(), ResultType,
-      //                         "sub.ptr.lhs.cast");
-      //llvm::Value *BytesBetween = Builder.CreateSub(LHS, RHS, "ivar.offset");
-      llvm::Type *psubTys[] = { ResultType, LvalueDst.getPointer()->getType(),
-                                RHS->getType() };
-      llvm::Value *psubArgs[] = { LvalueDst.getPointer(), RHS };
-      llvm::Value *BytesBetween = Builder.CreateCall(
-                 CGM.getIntrinsic(llvm::Intrinsic::psub,
-                 ArrayRef<llvm::Type *>(psubTys, 3)),
-                 psubArgs, "ivar.offset");
+      Builder.CreateCapture(RHS);
+      RHS = Builder.CreateNewPtrToInt(RHS, ResultType, "sub.ptr.rhs.cast");
+      Builder.CreateCapture(LvalueDst.getPointer());
+      llvm::Value *LHS =
+        Builder.CreateNewPtrToInt(LvalueDst.getPointer(), ResultType,
+                               "sub.ptr.lhs.cast");
+      llvm::Value *BytesBetween = Builder.CreateSub(LHS, RHS, "ivar.offset");
 
       CGM.getObjCRuntime().EmitObjCIvarAssign(*this, src, dst,
                                               BytesBetween);
