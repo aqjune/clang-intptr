@@ -40,7 +40,6 @@ void testva (int n, ...)
 // CHECK-PPC-NEXT:  store i8 8, i8* [[GPRPTR]], align 4
 // CHECK-PPC-NEXT:  [[OVERFLOW_AREA_P:%[0-9]+]] = getelementptr inbounds %struct.__va_list_tag, %struct.__va_list_tag* [[ARRAYDECAY]], i32 0, i32 3
 // CHECK-PPC-NEXT:  [[OVERFLOW_AREA:%.+]] = load i8*, i8** [[OVERFLOW_AREA_P]], align 4
-// CHECK-PPC-NEXT:  capture i8* %argp.cur
 // CHECK-PPC-NEXT:  %{{[0-9]+}} =  newptrtoint i8* %argp.cur to i32
 // CHECK-PPC-NEXT:  %{{[0-9]+}} = add i32 %{{[0-9]+}}, 7
 // CHECK-PPC-NEXT:  %{{[0-9]+}} = and i32 %{{[0-9]+}}, -8

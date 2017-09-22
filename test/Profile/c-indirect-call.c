@@ -7,12 +7,10 @@ void (*foo)(void);
 
 int main(void) {
 // NOEXT:  [[REG1:%[0-9]+]] = load void ()*, void ()** @foo, align 8
-// NOEXT-NEXT:  capture void ()* [[REG1]]
 // NOEXT-NEXT:  [[REG2:%[0-9]+]] = newptrtoint void ()* [[REG1]] to i64
 // NOEXT-NEXT:  call void @__llvm_profile_instrument_target(i64 [[REG2]], i8* bitcast ({{.*}}* @__profd_main to i8*), i32 0)
 // NOEXT-NEXT:  call void [[REG1]]()
 // EXT:  [[REG1:%[0-9]+]] = load void ()*, void ()** @foo, align 8
-// EXT-NEXT:  capture void ()* [[REG1]]
 // EXT-NEXT:  [[REG2:%[0-9]+]] = newptrtoint void ()* [[REG1]] to i64
 // EXT-NEXT:  call void @__llvm_profile_instrument_target(i64 [[REG2]], i8* bitcast ({{.*}}* @__profd_main to i8*), i32 zeroext 0)
 // EXT-NEXT:  call void [[REG1]]()

@@ -49,7 +49,6 @@ long long test_i64(char *fmt, ...) {
 // CHECK:   [[VA1:%[^,=]+]] = bitcast i8** [[VA]] to i8*
 // CHECK:   call void @llvm.va_start(i8* [[VA1]])
 // CHECK:   [[ARGP_CUR:%[^,=]+]] = load i8*, i8** [[VA]], align 4
-// CHECK:   capture
 // CHECK:   [[R0:%[^,=]+]] = newptrtoint i8* [[ARGP_CUR]] to i32
 // CHECK:   [[R1:%[^,=]+]] = add i32 [[R0]], 7
 // CHECK:   [[R2:%[^,=]+]] = and i32 [[R1]], -8

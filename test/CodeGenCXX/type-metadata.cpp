@@ -119,7 +119,6 @@ void af(A *a) {
   // CFI: [[TRAPBB]]
   // NDIAG-NEXT: call void @llvm.trap()
   // NDIAG-NEXT: unreachable
-  // DIAG-NEXT: capture
   // DIAG-NEXT: [[VTINT:%[^ ]*]] = newptrtoint i8* [[VT]] to i64
   // DIAG-NEXT: [[VTVALID:%[^ ]*]] = zext i1 [[VTVALID0]] to i64
   // DIAG-ABORT-NEXT: call void @__ubsan_handle_cfi_check_fail_abort(i8* getelementptr inbounds ({{.*}} @[[BADTYPESTATIC]], i32 0, i32 0), i64 [[VTINT]], i64 [[VTVALID]])
