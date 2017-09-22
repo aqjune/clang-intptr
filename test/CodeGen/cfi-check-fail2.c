@@ -29,8 +29,8 @@ void caller(void (*f)()) {
 // CHECK:   br i1 %[[NOT_0]], label %[[CONT1:.*]], label %[[HANDLE0:.*]], !prof
 
 // CHECK: [[HANDLE0]]:
-// CHECK:   %[[DATA0:.*]] = ptrtoint i8* %[[DATA]] to i64,
-// CHECK:   %[[ADDR0:.*]] = ptrtoint i8* %[[ADDR]] to i64,
+// CHECK:   %[[DATA0:.*]] = newptrtoint i8* %[[DATA]] to i64,
+// CHECK:   %[[ADDR0:.*]] = newptrtoint i8* %[[ADDR]] to i64,
 // CHECK:   call void @__ubsan_handle_cfi_check_fail_abort(i64 %[[DATA0]], i64 %[[ADDR0]], i64 %[[VTVALID]])
 // CHECK:   unreachable
 

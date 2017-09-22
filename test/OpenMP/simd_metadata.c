@@ -12,11 +12,11 @@ void h1(float *c, float *a, double b[], int size)
 // CHECK-LABEL: define void @h1
   int t = 0;
 #pragma omp simd safelen(16) linear(t) aligned(c:32) aligned(a,b)
-// CHECK:         [[C_PTRINT:%.+]] = ptrtoint
+// CHECK:         [[C_PTRINT:%.+]] = newptrtoint
 // CHECK-NEXT:    [[C_MASKEDPTR:%.+]] = and i{{[0-9]+}} [[C_PTRINT]], 31
 // CHECK-NEXT:    [[C_MASKCOND:%.+]] = icmp eq i{{[0-9]+}} [[C_MASKEDPTR]], 0
 // CHECK-NEXT:    call void @llvm.assume(i1 [[C_MASKCOND]])
-// CHECK:         [[A_PTRINT:%.+]] = ptrtoint
+// CHECK:         [[A_PTRINT:%.+]] = newptrtoint
 
 // X86-NEXT:     [[A_MASKEDPTR:%.+]] = and i{{[0-9]+}} [[A_PTRINT]], 15
 // X86-AVX-NEXT: [[A_MASKEDPTR:%.+]] = and i{{[0-9]+}} [[A_PTRINT]], 31
@@ -26,7 +26,7 @@ void h1(float *c, float *a, double b[], int size)
 
 // CHECK-NEXT:    [[A_MASKCOND:%.+]] = icmp eq i{{[0-9]+}} [[A_MASKEDPTR]], 0
 // CHECK-NEXT:    call void @llvm.assume(i1 [[A_MASKCOND]])
-// CHECK:         [[B_PTRINT:%.+]] = ptrtoint
+// CHECK:         [[B_PTRINT:%.+]] = newptrtoint
 
 // X86-NEXT:      [[B_MASKEDPTR:%.+]] = and i{{[0-9]+}} [[B_PTRINT]], 15
 // X86-AVX-NEXT:  [[B_MASKEDPTR:%.+]] = and i{{[0-9]+}} [[B_PTRINT]], 31
@@ -43,11 +43,11 @@ void h1(float *c, float *a, double b[], int size)
 // do not emit parallel_loop_access metadata due to usage of safelen clause.
 // CHECK-NOT: store float {{.+}}, float* {{.+}}, align {{.+}}, !llvm.mem.parallel_loop_access {{![0-9]+}}
 #pragma omp simd safelen(16) linear(t) aligned(c:32) aligned(a,b) simdlen(8)
-// CHECK:         [[C_PTRINT:%.+]] = ptrtoint
+// CHECK:         [[C_PTRINT:%.+]] = newptrtoint
 // CHECK-NEXT:    [[C_MASKEDPTR:%.+]] = and i{{[0-9]+}} [[C_PTRINT]], 31
 // CHECK-NEXT:    [[C_MASKCOND:%.+]] = icmp eq i{{[0-9]+}} [[C_MASKEDPTR]], 0
 // CHECK-NEXT:    call void @llvm.assume(i1 [[C_MASKCOND]])
-// CHECK:         [[A_PTRINT:%.+]] = ptrtoint
+// CHECK:         [[A_PTRINT:%.+]] = newptrtoint
 
 // X86-NEXT:     [[A_MASKEDPTR:%.+]] = and i{{[0-9]+}} [[A_PTRINT]], 15
 // X86-AVX-NEXT: [[A_MASKEDPTR:%.+]] = and i{{[0-9]+}} [[A_PTRINT]], 31
@@ -57,7 +57,7 @@ void h1(float *c, float *a, double b[], int size)
 
 // CHECK-NEXT:    [[A_MASKCOND:%.+]] = icmp eq i{{[0-9]+}} [[A_MASKEDPTR]], 0
 // CHECK-NEXT:    call void @llvm.assume(i1 [[A_MASKCOND]])
-// CHECK:         [[B_PTRINT:%.+]] = ptrtoint
+// CHECK:         [[B_PTRINT:%.+]] = newptrtoint
 
 // X86-NEXT:      [[B_MASKEDPTR:%.+]] = and i{{[0-9]+}} [[B_PTRINT]], 15
 // X86-AVX-NEXT:  [[B_MASKEDPTR:%.+]] = and i{{[0-9]+}} [[B_PTRINT]], 31
@@ -74,11 +74,11 @@ void h1(float *c, float *a, double b[], int size)
 // do not emit parallel_loop_access metadata due to usage of safelen clause.
 // CHECK-NOT: store float {{.+}}, float* {{.+}}, align {{.+}}, !llvm.mem.parallel_loop_access {{![0-9]+}}
 #pragma omp simd linear(t) aligned(c:32) aligned(a,b) simdlen(8)
-// CHECK:         [[C_PTRINT:%.+]] = ptrtoint
+// CHECK:         [[C_PTRINT:%.+]] = newptrtoint
 // CHECK-NEXT:    [[C_MASKEDPTR:%.+]] = and i{{[0-9]+}} [[C_PTRINT]], 31
 // CHECK-NEXT:    [[C_MASKCOND:%.+]] = icmp eq i{{[0-9]+}} [[C_MASKEDPTR]], 0
 // CHECK-NEXT:    call void @llvm.assume(i1 [[C_MASKCOND]])
-// CHECK:         [[A_PTRINT:%.+]] = ptrtoint
+// CHECK:         [[A_PTRINT:%.+]] = newptrtoint
 
 // X86-NEXT:     [[A_MASKEDPTR:%.+]] = and i{{[0-9]+}} [[A_PTRINT]], 15
 // X86-AVX-NEXT: [[A_MASKEDPTR:%.+]] = and i{{[0-9]+}} [[A_PTRINT]], 31
@@ -88,7 +88,7 @@ void h1(float *c, float *a, double b[], int size)
 
 // CHECK-NEXT:    [[A_MASKCOND:%.+]] = icmp eq i{{[0-9]+}} [[A_MASKEDPTR]], 0
 // CHECK-NEXT:    call void @llvm.assume(i1 [[A_MASKCOND]])
-// CHECK:         [[B_PTRINT:%.+]] = ptrtoint
+// CHECK:         [[B_PTRINT:%.+]] = newptrtoint
 
 // X86-NEXT:      [[B_MASKEDPTR:%.+]] = and i{{[0-9]+}} [[B_PTRINT]], 15
 // X86-AVX-NEXT:  [[B_MASKEDPTR:%.+]] = and i{{[0-9]+}} [[B_PTRINT]], 31

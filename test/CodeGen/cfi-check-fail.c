@@ -29,8 +29,8 @@ void caller(void (*f)()) {
 // CHECK:   br i1 %[[NOT_0]], label %[[CONT1:.*]], label %[[HANDLE0:.*]], !prof
 
 // CHECK: [[HANDLE0]]:
-// CHECK:   %[[DATA0:.*]] = ptrtoint i8* %[[DATA]] to i64,
-// CHECK:   %[[ADDR0:.*]] = ptrtoint i8* %[[ADDR]] to i64,
+// CHECK:   %[[DATA0:.*]] = newptrtoint i8* %[[DATA]] to i64,
+// CHECK:   %[[ADDR0:.*]] = newptrtoint i8* %[[ADDR]] to i64,
 // CHECK:   call void @__ubsan_handle_cfi_check_fail(i64 %[[DATA0]], i64 %[[ADDR0]], i64 %[[VTVALID]])
 // CHECK:   br label %[[CONT1]]
 
@@ -47,8 +47,8 @@ void caller(void (*f)()) {
 // CHECK:   br i1 %[[NOT_2]], label %[[CONT3:.*]], label %[[HANDLE2:.*]], !prof
 
 // CHECK: [[HANDLE2]]:
-// CHECK:   %[[DATA2:.*]] = ptrtoint i8* %[[DATA]] to i64,
-// CHECK:   %[[ADDR2:.*]] = ptrtoint i8* %[[ADDR]] to i64,
+// CHECK:   %[[DATA2:.*]] = newptrtoint i8* %[[DATA]] to i64,
+// CHECK:   %[[ADDR2:.*]] = newptrtoint i8* %[[ADDR]] to i64,
 // CHECK:   call void @__ubsan_handle_cfi_check_fail_abort(i64 %[[DATA2]], i64 %[[ADDR2]], i64 %[[VTVALID]])
 // CHECK:   unreachable
 
@@ -57,8 +57,8 @@ void caller(void (*f)()) {
 // CHECK:   br i1 %[[NOT_3]], label %[[CONT4:.*]], label %[[HANDLE3:.*]], !prof
 
 // CHECK: [[HANDLE3]]:
-// CHECK:   %[[DATA3:.*]] = ptrtoint i8* %[[DATA]] to i64,
-// CHECK:   %[[ADDR3:.*]] = ptrtoint i8* %[[ADDR]] to i64,
+// CHECK:   %[[DATA3:.*]] = newptrtoint i8* %[[DATA]] to i64,
+// CHECK:   %[[ADDR3:.*]] = newptrtoint i8* %[[ADDR]] to i64,
 // CHECK:   call void @__ubsan_handle_cfi_check_fail(i64 %[[DATA3]], i64 %[[ADDR3]], i64 %[[VTVALID]])
 // CHECK:   br label %[[CONT4]]
 

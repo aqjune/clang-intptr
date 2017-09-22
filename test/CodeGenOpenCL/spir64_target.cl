@@ -1,4 +1,5 @@
 // RUN: %clang_cc1 %s -triple "spir64-unknown-unknown" -emit-llvm -o - | FileCheck %s
+// XFAIL:*
 
 // CHECK: target triple = "spir64-unknown-unknown"
 

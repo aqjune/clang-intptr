@@ -2,14 +2,14 @@
 
 // CHECK-LABEL: define void @unary_arith
 void unary_arith(char *p) {
-  // CHECK:  [[BASE:%.*]] = ptrtoint i8* {{.*}} to i64, !nosanitize
+  // CHECK:  [[BASE:%.*]] = newptrtoint i8* {{.*}} to i64, !nosanitize
   // CHECK-NEXT: [[COMPGEP:%.*]] = add i64 [[BASE]], 1, !nosanitize
   // CHECK-NEXT: [[POSVALID:%.*]] = icmp uge i64 [[COMPGEP]], [[BASE]], !nosanitize
   // CHECK-NEXT: br i1 [[POSVALID]]{{.*}}, !nosanitize
   // CHECK: call void @__ubsan_handle_pointer_overflow{{.*}}, i64 [[BASE]], i64 [[COMPGEP]]){{.*}}, !nosanitize
   ++p;
 
-  // CHECK: ptrtoint i8* {{.*}} to i64, !nosanitize
+  // CHECK: newptrtoint i8* {{.*}} to i64, !nosanitize
   // CHECK-NEXT: [[COMPGEP:%.*]] = add i64 {{.*}}, -1, !nosanitize
   // CHECK: [[NEGVALID:%.*]] = icmp ule i64 [[COMPGEP]], {{.*}}, !nosanitize
   // CHECK-NOT: select
@@ -33,7 +33,8 @@ void binary_arith(char *p, int i) {
   // CHECK: [[SMUL:%.*]] = call { i64, i1 } @llvm.smul.with.overflow.i64(i64 1, i64 %{{.*}}), !nosanitize
   // CHECK-NEXT: [[SMULOFLOW:%.*]] = extractvalue { i64, i1 } [[SMUL]], 1, !nosanitize
   // CHECK-NEXT: [[SMULVAL:%.*]] = extractvalue { i64, i1 } [[SMUL]], 0, !nosanitize
-  // CHECK-NEXT: [[BASE:%.*]] = ptrtoint i8* {{.*}} to i64, !nosanitize
+  // CHECK-NEXT: capture
+  // CHECK-NEXT: [[BASE:%.*]] = newptrtoint i8* {{.*}} to i64, !nosanitize
   // CHECK-NEXT: [[COMPGEP:%.*]] = add i64 [[BASE]], [[SMULVAL]], !nosanitize
   // CHECK-NEXT: [[OFFSETVALID:%.*]] = xor i1 [[SMULOFLOW]], true, !nosanitize
   // CHECK-NEXT: [[POSVALID:%.*]] = icmp uge i64 [[COMPGEP]], [[BASE]], !nosanitize
@@ -57,7 +58,8 @@ void binary_arith_unsigned(char *p, unsigned i) {
   // CHECK: [[SMUL:%.*]] = call { i64, i1 } @llvm.smul.with.overflow.i64(i64 1, i64 %{{.*}}), !nosanitize
   // CHECK-NEXT: [[SMULOFLOW:%.*]] = extractvalue { i64, i1 } [[SMUL]], 1, !nosanitize
   // CHECK-NEXT: [[SMULVAL:%.*]] = extractvalue { i64, i1 } [[SMUL]], 0, !nosanitize
-  // CHECK-NEXT: [[BASE:%.*]] = ptrtoint i8* {{.*}} to i64, !nosanitize
+  // CHECK-NEXT: capture
+  // CHECK-NEXT: [[BASE:%.*]] = newptrtoint i8* {{.*}} to i64, !nosanitize
   // CHECK-NEXT: [[COMPGEP:%.*]] = add i64 [[BASE]], [[SMULVAL]], !nosanitize
   // CHECK-NEXT: [[OFFSETVALID:%.*]] = xor i1 [[SMULOFLOW]], true, !nosanitize
   // CHECK-NEXT: [[POSVALID:%.*]] = icmp uge i64 [[COMPGEP]], [[BASE]], !nosanitize
@@ -80,7 +82,8 @@ void fixed_len_array(int k) {
   // CHECK-NEXT: [[SMUL:%.*]] = call { i64, i1 } @llvm.smul.with.overflow.i64(i64 40, i64 [[IDXPROM]]), !nosanitize
   // CHECK-NEXT: [[SMULOFLOW:%.*]] = extractvalue { i64, i1 } [[SMUL]], 1, !nosanitize
   // CHECK-NEXT: [[SMULVAL:%.*]] = extractvalue { i64, i1 } [[SMUL]], 0, !nosanitize
-  // CHECK-NEXT: [[BASE:%.*]] = ptrtoint [10 x [10 x i32]]* [[ARR]] to i64, !nosanitize
+  // CHECK-NEXT: capture
+  // CHECK-NEXT: [[BASE:%.*]] = newptrtoint [10 x [10 x i32]]* [[ARR]] to i64, !nosanitize
   // CHECK-NEXT: [[COMPGEP:%.*]] = add i64 [[BASE]], [[SMULVAL]], !nosanitize
   // CHECK-NEXT: [[OFFSETVALID:%.*]] = xor i1 [[SMULOFLOW]], true, !nosanitize
   // CHECK-NEXT: [[POSVALID:%.*]] = icmp uge i64 [[COMPGEP]], [[BASE]], !nosanitize
@@ -159,7 +162,8 @@ struct S1 {
 // CHECK-LABEL: define void @struct_index
 void struct_index(struct S1 *p) {
   // CHECK: getelementptr inbounds %struct.S1, %struct.S1* [[P:%.*]], i64 10
-  // CHECK-NEXT: [[BASE:%.*]] = ptrtoint %struct.S1* [[P]] to i64, !nosanitize
+  // CHECK-NEXT: capture
+  // CHECK-NEXT: [[BASE:%.*]] = newptrtoint %struct.S1* [[P]] to i64, !nosanitize
   // CHECK-NEXT: [[COMPGEP:%.*]] = add i64 [[BASE]], 240, !nosanitize
   // CHECK: select
   // CHECK: @__ubsan_handle_pointer_overflow{{.*}} i64 [[BASE]], i64 [[COMPGEP]]) {{.*}}, !nosanitize

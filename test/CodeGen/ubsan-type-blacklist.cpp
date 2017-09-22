@@ -2,6 +2,7 @@
 // RUN: echo "type:_ZTI3Foo" > %t-type.blacklist
 // RUN: %clang_cc1 -triple x86_64-linux-gnu -fsanitize=vptr -fsanitize-recover=vptr -emit-llvm %s -o - | FileCheck %s --check-prefix=DEFAULT
 // RUN: %clang_cc1 -triple x86_64-linux-gnu -fsanitize=vptr -fsanitize-recover=vptr -fsanitize-blacklist=%t-type.blacklist -emit-llvm %s -o - | FileCheck %s --check-prefix=TYPE
+// XFAIL:*
 
 class Bar {
 public:

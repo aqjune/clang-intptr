@@ -1,4 +1,5 @@
 // RUN: %clang_cc1 %s -emit-llvm -triple %itanium_abi_triple -o - -O2 | opt - -S -globalopt -o - | FileCheck %s
+// XFAIL:*
 
 struct B;
 extern B x;

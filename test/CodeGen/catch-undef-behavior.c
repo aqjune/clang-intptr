@@ -41,7 +41,7 @@ void foo() {
   // CHECK-UBSAN: br i1 %[[OK]], {{.*}} !prof ![[WEIGHT_MD:.*]], !nosanitize
   // CHECK-TRAP:  br i1 %[[OK]], {{.*}}
 
-  // CHECK-UBSAN:      %[[ARG:.*]] = ptrtoint {{.*}} %[[PTR]] to i64
+  // CHECK-UBSAN:      %[[ARG:.*]] = newptrtoint {{.*}} %[[PTR]] to i64
   // CHECK-UBSAN-NEXT: call void @__ubsan_handle_type_mismatch_v1(i8* bitcast ({{.*}} @[[LINE_100]] to i8*), i64 %[[ARG]])
 
   // CHECK-TRAP:      call void @llvm.trap() [[NR_NUW:#[0-9]+]]
@@ -55,11 +55,11 @@ int bar(int *a) {
   // CHECK-COMMON:      %[[SIZE:.*]] = call i64 @llvm.objectsize.i64
   // CHECK-COMMON-NEXT: icmp uge i64 %[[SIZE]], 4
 
-  // CHECK-COMMON:      %[[PTRINT:.*]] = ptrtoint
+  // CHECK-COMMON:      %[[PTRINT:.*]] = newptrtoint
   // CHECK-COMMON-NEXT: %[[MISALIGN:.*]] = and i64 %[[PTRINT]], 3
   // CHECK-COMMON-NEXT: icmp eq i64 %[[MISALIGN]], 0
 
-  // CHECK-UBSAN:      %[[ARG:.*]] = ptrtoint
+  // CHECK-UBSAN:      %[[ARG:.*]] = newptrtoint
   // CHECK-UBSAN-NEXT: call void @__ubsan_handle_type_mismatch_v1(i8* bitcast ({{.*}} @[[LINE_200]] to i8*), i64 %[[ARG]])
 
   // CHECK-TRAP:      call void @llvm.trap() [[NR_NUW]]
@@ -252,7 +252,7 @@ int long_double_int_overflow(long double ld) {
   // CHECK-COMMON-NEXT: br i1 %[[INBOUNDS]]
 
   // CHECK-UBSAN: store x86_fp80 %[[F]], x86_fp80* %[[ALLOCA:.*]], align 16, !nosanitize
-  // CHECK-UBSAN: %[[ARG:.*]] = ptrtoint x86_fp80* %[[ALLOCA]] to i64
+  // CHECK-UBSAN: %[[ARG:.*]] = newptrtoint x86_fp80* %[[ALLOCA]] to i64
   // CHECK-UBSAN: call void @__ubsan_handle_float_cast_overflow(i8* bitcast ({{.*}} @[[LINE_1300]] to i8*), i64 %[[ARG]]
 
   // CHECK-TRAP:      call void @llvm.trap() [[NR_NUW]]

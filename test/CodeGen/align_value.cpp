@@ -13,7 +13,7 @@ struct ad_struct {
 double *foo(ad_struct& x) {
 // CHECK-LABEL: @_Z3fooR9ad_struct
 
-// CHECK: [[PTRINT1:%.+]] = ptrtoint
+// CHECK: [[PTRINT1:%.+]] = newptrtoint
 // CHECK: [[MASKEDPTR1:%.+]] = and i64 [[PTRINT1]], 63
 // CHECK: [[MASKCOND1:%.+]] = icmp eq i64 [[MASKEDPTR1]], 0
 // CHECK: call void @llvm.assume(i1 [[MASKCOND1]])
@@ -23,7 +23,7 @@ double *foo(ad_struct& x) {
 double *goo(ad_struct *x) {
 // CHECK-LABEL: @_Z3gooP9ad_struct
 
-// CHECK: [[PTRINT2:%.+]] = ptrtoint
+// CHECK: [[PTRINT2:%.+]] = newptrtoint
 // CHECK: [[MASKEDPTR2:%.+]] = and i64 [[PTRINT2]], 63
 // CHECK: [[MASKCOND2:%.+]] = icmp eq i64 [[MASKEDPTR2]], 0
 // CHECK: call void @llvm.assume(i1 [[MASKCOND2]])
@@ -33,7 +33,7 @@ double *goo(ad_struct *x) {
 double *bar(aligned_double *x) {
 // CHECK-LABEL: @_Z3barPPd
 
-// CHECK: [[PTRINT3:%.+]] = ptrtoint
+// CHECK: [[PTRINT3:%.+]] = newptrtoint
 // CHECK: [[MASKEDPTR3:%.+]] = and i64 [[PTRINT3]], 63
 // CHECK: [[MASKCOND3:%.+]] = icmp eq i64 [[MASKEDPTR3]], 0
 // CHECK: call void @llvm.assume(i1 [[MASKCOND3]])
@@ -43,7 +43,7 @@ double *bar(aligned_double *x) {
 double *car(aligned_double &x) {
 // CHECK-LABEL: @_Z3carRPd
 
-// CHECK: [[PTRINT4:%.+]] = ptrtoint
+// CHECK: [[PTRINT4:%.+]] = newptrtoint
 // CHECK: [[MASKEDPTR4:%.+]] = and i64 [[PTRINT4]], 63
 // CHECK: [[MASKCOND4:%.+]] = icmp eq i64 [[MASKEDPTR4]], 0
 // CHECK: call void @llvm.assume(i1 [[MASKCOND4]])
@@ -53,7 +53,7 @@ double *car(aligned_double &x) {
 double *dar(aligned_double *x) {
 // CHECK-LABEL: @_Z3darPPd
 
-// CHECK: [[PTRINT5:%.+]] = ptrtoint
+// CHECK: [[PTRINT5:%.+]] = newptrtoint
 // CHECK: [[MASKEDPTR5:%.+]] = and i64 [[PTRINT5]], 63
 // CHECK: [[MASKCOND5:%.+]] = icmp eq i64 [[MASKEDPTR5]], 0
 // CHECK: call void @llvm.assume(i1 [[MASKCOND5]])
@@ -64,7 +64,7 @@ aligned_double eep();
 double *ret() {
 // CHECK-LABEL: @_Z3retv
 
-// CHECK: [[PTRINT6:%.+]] = ptrtoint
+// CHECK: [[PTRINT6:%.+]] = newptrtoint
 // CHECK: [[MASKEDPTR6:%.+]] = and i64 [[PTRINT6]], 63
 // CHECK: [[MASKCOND6:%.+]] = icmp eq i64 [[MASKEDPTR6]], 0
 // CHECK: call void @llvm.assume(i1 [[MASKCOND6]])

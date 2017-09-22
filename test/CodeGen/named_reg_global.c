@@ -50,7 +50,7 @@ int fn1() {
 void fn2(struct p4_Thread *val) {
   p4TH = val;
 }
-// CHECK: %[[regw:[0-9]+]] = ptrtoint %struct.p4_Thread* %{{.*}} to i[[bits]]
+// CHECK: %[[regw:[0-9]+]] = newptrtoint %struct.p4_Thread* %{{.*}} to i[[bits]]
 // CHECK: call void @llvm.write_register.i[[bits]](metadata !0, i[[bits]] %[[regw]])
 
 // CHECK-X86-64: !llvm.named.register.rsp = !{!0}

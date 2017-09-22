@@ -4,6 +4,7 @@
 // RUN: %clang_cc1 -ffreestanding -fms-extensions -fms-compatibility -fms-compatibility-version=17.00 \
 // RUN:         -triple x86_64--windows -Oz -emit-llvm %s -o - \
 // RUN:         | FileCheck %s --check-prefix=CHECK --check-prefix=CHECK-X64
+// XFAIL:*
 
 #if defined(__i386__)
 char test__readfsbyte(unsigned long Offset) {

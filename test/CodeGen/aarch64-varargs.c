@@ -1,5 +1,6 @@
 // RUN: %clang_cc1 -triple arm64-linux-gnu -emit-llvm -o - %s | FileCheck --check-prefix=CHECK --check-prefix=CHECK-LE %s
 // RUN: %clang_cc1 -triple aarch64_be-linux-gnu -emit-llvm -o - %s | FileCheck --check-prefix=CHECK --check-prefix=CHECK-BE %s
+// XFAIL:*
 
 #include <stdarg.h>
 

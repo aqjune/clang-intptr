@@ -254,12 +254,12 @@ int test_strex(char *addr) {
   res |= __builtin_arm_strex(&var, (struct Simple **)addr);
 // CHECK: [[TMP4:%.*]] = bitcast i8* %addr to %struct.Simple**
 // CHECK: [[TMP5:%.*]] = bitcast %struct.Simple** [[TMP4]] to i32*
-// CHECK: [[INTVAL:%.*]] = ptrtoint %struct.Simple* %var to i32
+// CHECK: [[INTVAL:%.*]] = newptrtoint %struct.Simple* %var to i32
 // CHECK: call i32 @llvm.arm.strex.p0i32(i32 [[INTVAL]], i32* [[TMP5]])
 
 // CHECK-ARM64: [[TMP4:%.*]] = bitcast i8* %addr to %struct.Simple**
 // CHECK-ARM64: [[TMP5:%.*]] = bitcast %struct.Simple** [[TMP4]] to i64*
-// CHECK-ARM64: [[INTVAL:%.*]] = ptrtoint %struct.Simple* %var to i64
+// CHECK-ARM64: [[INTVAL:%.*]] = newptrtoint %struct.Simple* %var to i64
 // CHECK-ARM64: call i32 @llvm.aarch64.stxr.p0i64(i64 [[INTVAL]], i64* [[TMP5]])
 
   return res;
@@ -328,12 +328,12 @@ int test_stlex(char *addr) {
   res |= __builtin_arm_stlex(&var, (struct Simple **)addr);
 // CHECK: [[TMP4:%.*]] = bitcast i8* %addr to %struct.Simple**
 // CHECK: [[TMP5:%.*]] = bitcast %struct.Simple** [[TMP4]] to i32*
-// CHECK: [[INTVAL:%.*]] = ptrtoint %struct.Simple* %var to i32
+// CHECK: [[INTVAL:%.*]] = newptrtoint %struct.Simple* %var to i32
 // CHECK: call i32 @llvm.arm.stlex.p0i32(i32 [[INTVAL]], i32* [[TMP5]])
 
 // CHECK-ARM64: [[TMP4:%.*]] = bitcast i8* %addr to %struct.Simple**
 // CHECK-ARM64: [[TMP5:%.*]] = bitcast %struct.Simple** [[TMP4]] to i64*
-// CHECK-ARM64: [[INTVAL:%.*]] = ptrtoint %struct.Simple* %var to i64
+// CHECK-ARM64: [[INTVAL:%.*]] = newptrtoint %struct.Simple* %var to i64
 // CHECK-ARM64: call i32 @llvm.aarch64.stlxr.p0i64(i64 [[INTVAL]], i64* [[TMP5]])
 
   return res;

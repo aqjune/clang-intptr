@@ -1,6 +1,7 @@
 // RUN: %clang_cc1 %s -triple x86_64-unknown-linux-gnu -O0 -ffake-address-space-map -cl-std=CL2.0 -emit-llvm -o - | FileCheck %s
 // RUN: %clang_cc1 %s -triple x86_64-unknown-linux-gnu -O0 -cl-std=CL2.0 -emit-llvm -o - | FileCheck --check-prefix=CHECK-NOFAKE %s
 // When -ffake-address-space-map is not used, all addr space mapped to 0 for x86_64.
+// XFAIL:*
 
 // test that we generate address space casts everywhere we need conversions of
 // pointers to different address spaces

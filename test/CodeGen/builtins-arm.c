@@ -220,7 +220,7 @@ unsigned long long rsr64() {
 
 void *rsrp() {
   // CHECK: [[V0:[%A-Za-z0-9.]+]] = call i32 @llvm.read_register.i32(metadata ![[M2:.*]])
-  // CHECK-NEXT: [[V1:[%A-Za-z0-9.]+]] = inttoptr i32 [[V0]] to i8*
+  // CHECK-NEXT: [[V1:[%A-Za-z0-9.]+]] = newinttoptr i32 [[V0]] to i8*
   // CHECK-NEXT: ret i8* [[V1]]
   return __builtin_arm_rsrp("sysreg");
 }
@@ -236,7 +236,7 @@ void wsr64(unsigned long long v) {
 }
 
 void wsrp(void *v) {
-  // CHECK: [[V0:[%A-Za-z0-9.]+]] = ptrtoint i8* %v to i32
+  // CHECK: [[V0:[%A-Za-z0-9.]+]] = newptrtoint i8* %v to i32
   // CHECK-NEXT: call void @llvm.write_register.i32(metadata ![[M2]], i32 [[V0]])
   __builtin_arm_wsrp("sysreg", v);
 }

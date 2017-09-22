@@ -11,7 +11,7 @@ __INT32_TYPE__ test1(__INT32_TYPE__ a) {
 // CHECK: [[ISPOS1:%.+]] = icmp sgt i64 [[ALIGNCAST1]], 0
 // CHECK: [[POSMASK1:%.+]] = sub i64 [[ALIGNCAST1]], 1
 // CHECK: [[MASK1:%.+]] = select i1 [[ISPOS1]], i64 [[POSMASK1]], i64 0
-// CHECK: [[PTRINT1:%.+]] = ptrtoint
+// CHECK: [[PTRINT1:%.+]] = newptrtoint
 // CHECK: [[MASKEDPTR1:%.+]] = and i64 [[PTRINT1]], [[MASK1]]
 // CHECK: [[MASKCOND1:%.+]] = icmp eq i64 [[MASKEDPTR1]], 0
 // CHECK: call void @llvm.assume(i1 [[MASKCOND1]])
@@ -26,7 +26,7 @@ __INT32_TYPE__ test2(__SIZE_TYPE__ a) {
 // CHECK: [[ISPOS2:%.+]] = icmp sgt i64 [[ALIGNCAST2]], 0
 // CHECK: [[POSMASK2:%.+]] = sub i64 [[ALIGNCAST2]], 1
 // CHECK: [[MASK2:%.+]] = select i1 [[ISPOS2]], i64 [[POSMASK2]], i64 0
-// CHECK: [[PTRINT2:%.+]] = ptrtoint
+// CHECK: [[PTRINT2:%.+]] = newptrtoint
 // CHECK: [[MASKEDPTR2:%.+]] = and i64 [[PTRINT2]], [[MASK2]]
 // CHECK: [[MASKCOND2:%.+]] = icmp eq i64 [[MASKEDPTR2]], 0
 // CHECK: call void @llvm.assume(i1 [[MASKCOND2]])
@@ -42,7 +42,7 @@ __INT32_TYPE__ test3(__INT32_TYPE__ a) {
 // CHECK: [[ISPOS3:%.+]] = icmp sgt i64 [[CONV3]], 0
 // CHECK: [[POSMASK3:%.+]] = sub i64 [[CONV3]], 1
 // CHECK: [[MASK3:%.+]] = select i1 [[ISPOS3]], i64 [[POSMASK3]], i64 0
-// CHECK: [[PTRINT3:%.+]] = ptrtoint
+// CHECK: [[PTRINT3:%.+]] = newptrtoint
 // CHECK: [[MASKEDPTR3:%.+]] = and i64 [[PTRINT3]], [[MASK3]]
 // CHECK: [[MASKCOND3:%.+]] = icmp eq i64 [[MASKEDPTR3]], 0
 // CHECK: call void @llvm.assume(i1 [[MASKCOND3]])
@@ -56,7 +56,7 @@ __INT32_TYPE__ test4(__SIZE_TYPE__ a) {
 // CHECK: [[ISPOS4:%.+]] = icmp sgt i64 [[PARAM4]], 0
 // CHECK: [[POSMASK4:%.+]] = sub i64 [[PARAM4]], 1
 // CHECK: [[MASK4:%.+]] = select i1 [[ISPOS4]], i64 [[POSMASK4]], i64 0
-// CHECK: [[PTRINT4:%.+]] = ptrtoint
+// CHECK: [[PTRINT4:%.+]] = newptrtoint
 // CHECK: [[MASKEDPTR4:%.+]] = and i64 [[PTRINT4]], [[MASK4]]
 // CHECK: [[MASKCOND4:%.+]] = icmp eq i64 [[MASKEDPTR4]], 0
 // CHECK: call void @llvm.assume(i1 [[MASKCOND4]])
@@ -77,7 +77,7 @@ __INT32_TYPE__ test5(__int128_t a) {
 // CHECK: [[ISPOS5:%.+]] = icmp sgt i64 [[ALIGNCAST5]], 0
 // CHECK: [[POSMASK5:%.+]] = sub i64 [[ALIGNCAST5]], 1
 // CHECK: [[MASK5:%.+]] = select i1 [[ISPOS5]], i64 [[POSMASK5]], i64 0
-// CHECK: [[PTRINT5:%.+]] = ptrtoint
+// CHECK: [[PTRINT5:%.+]] = newptrtoint
 // CHECK: [[MASKEDPTR5:%.+]] = and i64 [[PTRINT5]], [[MASK5]]
 // CHECK: [[MASKCOND5:%.+]] = icmp eq i64 [[MASKEDPTR5]], 0
 // CHECK: call void @llvm.assume(i1 [[MASKCOND5]])
@@ -93,7 +93,7 @@ __INT32_TYPE__ test6(__int128_t a) {
 // CHECK: [[ISPOS6:%.+]] = icmp sgt i64 [[ALIGNCAST6]], 0
 // CHECK: [[POSMASK6:%.+]] = sub i64 [[ALIGNCAST6]], 1
 // CHECK: [[MASK6:%.+]] = select i1 [[ISPOS6]], i64 [[POSMASK6]], i64 0
-// CHECK: [[PTRINT6:%.+]] = ptrtoint
+// CHECK: [[PTRINT6:%.+]] = newptrtoint
 // CHECK: [[MASKEDPTR6:%.+]] = and i64 [[PTRINT6]], [[MASK6]]
 // CHECK: [[MASKCOND6:%.+]] = icmp eq i64 [[MASKEDPTR6]], 0
 // CHECK: call void @llvm.assume(i1 [[MASKCOND6]])
