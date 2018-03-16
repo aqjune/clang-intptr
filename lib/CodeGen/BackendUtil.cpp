@@ -586,6 +586,8 @@ void EmitAssemblyHelper::CreatePasses(legacy::PassManager &MPM,
   FPM.add(new TargetLibraryInfoWrapperPass(*TLII));
   if (CodeGenOpts.VerifyModule)
     FPM.add(createVerifierPass());
+  
+  FPM.add(createInitialIntPtrFoldPass());
 
   // Set up the per-module pass manager.
   if (!CodeGenOpts.RewriteMapFiles.empty())
